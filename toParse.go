@@ -1,16 +1,21 @@
-//go:generate go run gen.go
-package main
+//go:generate go run cmd/main.go
+package gosqlgen
+
+import "database/sql"
 
 // user is an object
-// sql: users
+// gosqlgen: users
 type User struct {
-	Id   int `sql:"id,pk"`
-	Name int `sql:"name"`
+	RawId int    `gosqlgen:"_id,pk"`
+	Id    string `gosqlgen:"id,bk"`
+	Name  int    `gosqlgen:"name"`
 }
 
-// sql: addresses
+// gosqlgen: addresses
 type Address struct {
-	Id      int    `sql:"id,pk"`
-	Address string `sql:"address"`
-	UserId  int    `sql:"user_id,fk users.id"`
+	RawId     int          `gosqlgen:"_id,pk"`
+	Id        string       `gosqlgen:"id,bk"`
+	Address   string       `gosqlgen:"address"`
+	UserId    int          `gosqlgen:"user_id,fk users.id"`
+	DeletedAt sql.NullTime `gosqlgen:"deleted_at,sd"`
 }
