@@ -12,10 +12,11 @@ const TagPrefix = "gosqlgen"
 
 type Column struct {
 	Name        string
+	FieldName   string
 	PrimaryKey  bool
 	ForeignKey  *Column
 	Table       *Table
-	Type        ast.Expr
+	Type        string
 	SoftDelete  bool
 	BusinessKey bool
 
@@ -29,7 +30,8 @@ type Table struct {
 }
 
 type DBModel struct {
-	Tables []*Table
+	Tables      []*Table
+	PackageName string // TODO: How to parse the package name?
 }
 
 func (c *Column) FKTableAndColumn() (string, string, error) {
@@ -189,7 +191,8 @@ func NewDBModel(f *ast.File) (*DBModel, error) {
 						return nil, fmt.Errorf("Failed to parse column from tag %s: %w", fff.Tag.Value, err)
 					}
 					column.Table = &table
-					column.Type = fff.Type
+					column.Type = fmt.Sprintf("%v", fff.Type)
+					column.FieldName = fff.Names[0].Name
 					table.Columns = append(table.Columns, column)
 				}
 			}
