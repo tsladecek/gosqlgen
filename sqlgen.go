@@ -13,18 +13,27 @@ type Driver interface {
 	Delete(w io.Writer, tw io.Writer, table *Table, keys []*Column) error
 }
 
-func SaveTemplate(t string, path string) error {
-	fmt.Println(t)
-	return nil
-}
-
 func CreateTemplates(d Driver, model *DBModel) error {
-	writer := os.Stdout
-	testWriter := os.Stdout
+	writer, err := os.OpenFile("generatedMethods.go", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
 
-	writer.Write([]byte(fmt.Sprintf(`package %s
+	testWriter, err := os.OpenFile("generatedMethods_test.go", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+	defer testWriter.Close()
 
-type DbExecutor interface {
+	writer.Write(fmt.Appendf(nil, `package %s
+
+import (
+	"context"
+	"database/sql"
+)
+
+type dbExecutor interface {
 	// ExecContext executes a query without returning any rows. The args are for any placeholder parameters in the query.
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	// PrepareContext creates a prepared statement for later queries or executions. Multiple queries or executions may be run concurrently from the returned statement. The caller must call the statement's *Stmt.Close method when the statement is no longer needed.
@@ -35,7 +44,12 @@ type DbExecutor interface {
 	// QueryRowContext executes a query that is expected to return at most one row. QueryRowContext always returns a non-nil value. Errors are deferred until Row's Scan method is called. If the query selects no rows, the *Row.Scan will return ErrNoRows. Otherwise, *Row.Scan scans the first selected row and discards the rest.
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
-`, model.PackageName)))
+`, model.PackageName))
+
+	testWriter.Write(fmt.Appendf(nil, `package %s_test
+
+import "testing"
+`, model.PackageName))
 
 	for _, table := range model.Tables {
 		pk, bk, err := table.PkAndBk()

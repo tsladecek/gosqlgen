@@ -31,7 +31,7 @@ type Table struct {
 
 type DBModel struct {
 	Tables      []*Table
-	PackageName string // TODO: How to parse the package name?
+	PackageName string
 }
 
 func (c *Column) FKTableAndColumn() (string, string, error) {
@@ -158,7 +158,7 @@ func (d *DBModel) ReconcileRelationships() error {
 }
 
 func NewDBModel(f *ast.File) (*DBModel, error) {
-	dbModel := DBModel{Tables: make([]*Table, 0)}
+	dbModel := DBModel{Tables: make([]*Table, 0), PackageName: f.Name.Name}
 	for _, decl := range f.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {

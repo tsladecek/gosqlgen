@@ -27,3 +27,6 @@ go.work.sum
 
 # vscode stuff
 .vscode/
+
+# generated code samples
+generated*

@@ -30,13 +30,9 @@ func main() {
 		panic(err)
 	}
 
-	for _, table := range dbModel.Tables {
-		fmt.Printf("%+v\n", table)
-		for _, c := range table.Columns {
-			fmt.Printf("%+v\n", c)
-		}
+	d, err := gosqldrivermysql.NewDriver()
+	if err != nil {
+		panic(err)
 	}
-
-	d := gosqldrivermysql.NewDriver()
 	gosqlgen.CreateTemplates(d, dbModel)
 }
