@@ -1,7 +1,10 @@
 package gosqlgen
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"os"
 )
@@ -14,25 +17,15 @@ type Driver interface {
 }
 
 func CreateTemplates(d Driver, model *DBModel) error {
-	writer, err := os.OpenFile("generatedMethods.go", os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		return err
-	}
-	defer writer.Close()
+	writer := new(bytes.Buffer)
+	testWriter := new(bytes.Buffer)
 
-	testWriter, err := os.OpenFile("generatedMethods_test.go", os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		return err
-	}
-	defer testWriter.Close()
-
-	writer.Write(fmt.Appendf(nil, `package %s
-
+	writer.Write(fmt.Appendf(nil, `
+package %s
 import (
 	"context"
 	"database/sql"
 )
-
 type dbExecutor interface {
 	// ExecContext executes a query without returning any rows. The args are for any placeholder parameters in the query.
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
@@ -46,8 +39,8 @@ type dbExecutor interface {
 }
 `, model.PackageName))
 
-	testWriter.Write(fmt.Appendf(nil, `package %s_test
-
+	testWriter.Write(fmt.Appendf(nil, `
+package %s_test
 import "testing"
 `, model.PackageName))
 
@@ -62,11 +55,30 @@ import "testing"
 		}
 
 		if bk != nil {
-			err = d.Get(writer, testWriter, table, bk)
+			err = d.Get(bufio.NewWriter(writer), testWriter, table, bk)
 			if err != nil {
 				return fmt.Errorf("Failed to create GET template by business keys for table %s: %w", table.Name, err)
 			}
 		}
+	}
+
+	code, err := format.Source(writer.Bytes())
+	if err != nil {
+		return fmt.Errorf("Failed to format code: %w", err)
+	}
+	testCode, err := format.Source(testWriter.Bytes())
+	if err != nil {
+		return fmt.Errorf("Failed to format test code: %w", err)
+	}
+
+	err = os.WriteFile("generatedMethods.go", code, 0666)
+	if err != nil {
+		return fmt.Errorf("Failed writing code to a file: %w", err)
+	}
+
+	err = os.WriteFile("generatedMethods_test.go", testCode, 0666)
+	if err != nil {
+		return fmt.Errorf("Failed writing test code to a file: %w", err)
 	}
 
 	return nil
