@@ -8,71 +8,53 @@ import (
 )
 
 type driver struct {
-	getTemplate     *template.Template
-	getTestTemplate *template.Template
+	getTemplate *template.Template
 }
 
 const getTemplate = `
-func (t {{.StructName}}) getBy{{.ColumnName}}(ctx context.Context, db dbExecutor, id {{.ColumnType}}) ({{.StructName}}, error) {
+	func (t {{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor, {{ range .Keys }}{{.Name}} {{.Type}},{{ end }}) ({{.StructName}}, error) {
 	return {{.StructName}}{}, nil
 }
 `
 
-const getTestTemplate = `
-func Test{{.StructName}}GetBy{{.ColumnName}}(t *testing.T) {}
-`
-
-func NewDriver() (driver, error) {
+func New() (gosqlgen.Driver, error) {
 	getTmpl, err := template.New("get").Parse(getTemplate)
 	if err != nil {
 		return driver{}, err
 	}
 
-	getTestTmpl, err := template.New("getTest").Parse(getTestTemplate)
-	if err != nil {
-		return driver{}, err
-	}
-
-	return driver{getTemplate: getTmpl, getTestTemplate: getTestTmpl}, nil
+	return driver{getTemplate: getTmpl}, nil
 }
 
-func (d driver) get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column) error {
-	data := make(map[string]string)
+func (d driver) get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
+	data := make(map[string]any)
 	data["StructName"] = table.StructName
-	data["ColumnName"] = keys[0].FieldName
-	data["ColumnType"] = keys[0].Type
+	data["MethodName"] = methodName
+	data["Keys"] = keys
 	d.getTemplate.Execute(w, data)
 	return nil
 }
 
-func (d driver) getTest(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column) error {
-	data := make(map[string]string)
-	data["StructName"] = table.StructName
-	data["ColumnName"] = keys[0].FieldName
-	d.getTestTemplate.Execute(w, data)
-	return nil
-}
-
-func (d driver) Get(w io.Writer, tw io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column) error {
-	err := d.get(w, table, keys)
-	if err != nil {
-		return err
-	}
-
-	err = d.getTest(tw, table, keys)
-
+func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
+	err := d.get(w, table, keys, methodName)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-func (d driver) Create(w io.Writer, tw io.Writer, table *gosqlgen.Table) error {
+func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) error {
 	return nil
 }
-func (d driver) Update(w io.Writer, tw io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column) error {
+func (d driver) Update(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
 	return nil
 }
-func (d driver) Delete(w io.Writer, tw io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column) error {
+func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
+	return nil
+}
+
+func (d driver) TestSetup(w io.Writer, dbExecutorVarName string, migrationsPath string) error {
+	w.Write([]byte(`func TestNotImplemented(t *testing.T){}`))
+
 	return nil
 }

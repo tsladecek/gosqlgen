@@ -1,7 +1,6 @@
 package gosqlgen
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"go/format"
@@ -10,11 +9,22 @@ import (
 )
 
 type Driver interface {
-	Get(w io.Writer, tw io.Writer, table *Table, keys []*Column) error
-	Create(w io.Writer, tw io.Writer, table *Table) error
-	Update(w io.Writer, tw io.Writer, table *Table, keys []*Column) error
-	Delete(w io.Writer, tw io.Writer, table *Table, keys []*Column) error
+	Get(w io.Writer, table *Table, keys []*Column, methodName string) error
+	Create(w io.Writer, table *Table, methodName string) error
+	Update(w io.Writer, table *Table, keys []*Column, methodName string) error
+	Delete(w io.Writer, table *Table, keys []*Column, methodName string) error
+
+	TestSetup(w io.Writer, dbExecutorVarName string, migrationsPaths string) error
 }
+
+type MethodName string
+
+const (
+	MethodGetByPrimaryKeys  MethodName = "getByPrimaryKeys"
+	MethodGetByBusinessKeys MethodName = "getByBusinessKeys"
+)
+
+const DBExecutorVarName = "testSqlDb"
 
 func CreateTemplates(d Driver, model *DBModel) error {
 	writer := new(bytes.Buffer)
@@ -44,18 +54,20 @@ package %s_test
 import "testing"
 `, model.PackageName))
 
+	d.TestSetup(testWriter, DBExecutorVarName, "")
+
 	for _, table := range model.Tables {
 		pk, bk, err := table.PkAndBk()
 		if err != nil {
 			return fmt.Errorf("Failed to fetch primary and business keys: %w", err)
 		}
-		err = d.Get(writer, testWriter, table, pk)
+		err = d.Get(writer, table, pk, string(MethodGetByPrimaryKeys))
 		if err != nil {
 			return fmt.Errorf("Failed to create GET template by primary keys for table %s: %w", table.Name, err)
 		}
 
-		if bk != nil {
-			err = d.Get(bufio.NewWriter(writer), testWriter, table, bk)
+		if bk != nil && len(bk) > 0 {
+			err = d.Get(writer, table, bk, string(MethodGetByBusinessKeys))
 			if err != nil {
 				return fmt.Errorf("Failed to create GET template by business keys for table %s: %w", table.Name, err)
 			}

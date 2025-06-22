@@ -30,9 +30,12 @@ func main() {
 		panic(err)
 	}
 
-	d, err := gosqldrivermysql.NewDriver()
+	d, err := gosqldrivermysql.New()
 	if err != nil {
 		panic(err)
 	}
-	gosqlgen.CreateTemplates(d, dbModel)
+	err = gosqlgen.CreateTemplates(d, dbModel)
+	if err != nil {
+		panic(err)
+	}
 }
