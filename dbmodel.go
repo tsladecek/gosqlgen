@@ -11,14 +11,15 @@ import (
 const TagPrefix = "gosqlgen"
 
 type Column struct {
-	Name        string
-	FieldName   string
-	PrimaryKey  bool
-	ForeignKey  *Column
-	Table       *Table
-	Type        string
-	SoftDelete  bool
-	BusinessKey bool
+	Name          string
+	FieldName     string
+	PrimaryKey    bool    // pk
+	ForeignKey    *Column // fk table.column
+	Table         *Table
+	Type          string
+	SoftDelete    bool // sd
+	BusinessKey   bool // bk
+	AutoIncrement bool // ai
 
 	fk string
 }
@@ -32,6 +33,23 @@ type Table struct {
 type DBModel struct {
 	Tables      []*Table
 	PackageName string
+}
+
+func (d DBModel) Debug() {
+	fmt.Println("---DBModel Debug---")
+	fmt.Printf("--PackageName: %s--\n", d.PackageName)
+	for _, t := range d.Tables {
+		fmt.Printf("--Table: Name: %s, StructName: %s--\n", t.Name, t.StructName)
+		fmt.Println("Columns:")
+		for _, c := range t.Columns {
+			fmt.Printf("%+v\n", c)
+			if c.ForeignKey != nil {
+				fmt.Printf("\tFK: %+v\n", c.ForeignKey)
+			}
+		}
+
+		println()
+	}
 }
 
 func (c *Column) FKTableAndColumn() (string, string, error) {
@@ -85,6 +103,9 @@ func NewColumn(tag string) (*Column, error) {
 	m := strings.TrimSpace(items[1])
 	if m == "pk" {
 		c.PrimaryKey = true
+	} else if m == "pk ai" {
+		c.PrimaryKey = true
+		c.AutoIncrement = true
 	} else if strings.HasPrefix(m, "fk") {
 		fkFields := strings.Split(m, " ")
 		if len(fkFields) != 2 {

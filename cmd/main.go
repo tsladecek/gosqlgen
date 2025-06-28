@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go/parser"
 	"go/token"
@@ -13,6 +14,9 @@ import (
 )
 
 func main() {
+	debug := flag.Bool("debug", false, "debug")
+	flag.Parse()
+
 	filename := os.Getenv("GOFILE")
 	if filename == "" {
 		fmt.Println("Error: GOFILE environment variable not set.")
@@ -28,6 +32,10 @@ func main() {
 	dbModel, err := gosqlgen.NewDBModel(f)
 	if err != nil {
 		panic(err)
+	}
+
+	if *debug {
+		dbModel.Debug()
 	}
 
 	d, err := gosqldrivermysql.New()

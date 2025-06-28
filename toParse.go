@@ -1,4 +1,4 @@
-//go:generate go run cmd/main.go
+//go:generate go run cmd/main.go -debug
 package gosqlgen
 
 import "database/sql"
@@ -6,7 +6,7 @@ import "database/sql"
 // user is an object
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id,pk"`
+	RawId int    `gosqlgen:"_id,pk ai"`
 	Id    string `gosqlgen:"id,bk"`
 	Name  int    `gosqlgen:"name"`
 }
