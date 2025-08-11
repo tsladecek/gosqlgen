@@ -33,7 +33,13 @@ func CreateTemplates(d Driver, model *DBModel) error {
 	writer := new(bytes.Buffer)
 	testWriter := new(bytes.Buffer)
 
+	header := `// This is a generated code by the gosqlgen tool. Do not edit
+// see more at: github.com/tsladecek/gosqlgen
+`
+
 	writer.Write(fmt.Appendf(nil, `
+%s
+
 package %s
 import (
 	"context"
@@ -50,16 +56,18 @@ type dbExecutor interface {
 	// QueryRowContext executes a query that is expected to return at most one row. QueryRowContext always returns a non-nil value. Errors are deferred until Row's Scan method is called. If the query selects no rows, the *Row.Scan will return ErrNoRows. Otherwise, *Row.Scan scans the first selected row and discards the rest.
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
-`, model.PackageName))
+`, header, model.PackageName))
 
 	testWriter.Write(fmt.Appendf(nil, `
+%s
+
 package %s
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-`, model.PackageName))
+`, header, model.PackageName))
 
 	d.TestSetup(testWriter, DBExecutorVarName, "")
 

@@ -2,7 +2,9 @@ package gosqldrivermysql
 
 import (
 	"fmt"
+	"go/ast"
 	"io"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -144,6 +146,19 @@ func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) er
 	data["ColumnValuesPlaceholders"] = strings.Join(columnPlaceholders, ",")
 	data["AutoIncrementColumn"] = aiCol
 	data["AIColumnType"] = "int"
+
+	if aiCol != nil {
+		ai, ok := aiCol.Type.(*ast.Ident)
+		if !ok {
+			return fmt.Errorf("Autoincrement column %s not a basic type. Must be one of following types: int, int16, int32, int64", aiCol.Name)
+		}
+
+		if !slices.Contains([]string{"int", "int16", "int32", "int64"}, ai.Name) {
+			return fmt.Errorf("Autoincrement column %s must be one of following types: int, int16, int32, int64", aiCol.Name)
+		}
+
+		data["AIColumnType"] = ai.Name
+	}
 
 	d.insertTemplate.Execute(w, data)
 	return nil

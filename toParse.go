@@ -12,7 +12,7 @@ type User struct {
 
 // gosqlgen: addresses
 type Address struct {
-	RawId     int          `gosqlgen:"_id,pk"`
+	RawId     int32        `gosqlgen:"_id,pk ai"`
 	Id        string       `gosqlgen:"id,bk"`
 	Address   string       `gosqlgen:"address,bk"`
 	UserId    int          `gosqlgen:"user_id,fk users.id"`
