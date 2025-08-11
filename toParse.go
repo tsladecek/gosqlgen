@@ -3,7 +3,6 @@ package gosqlgen
 
 import "database/sql"
 
-// user is an object
 // gosqlgen: users
 type User struct {
 	RawId int    `gosqlgen:"_id,pk ai"`

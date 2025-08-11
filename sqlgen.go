@@ -22,6 +22,9 @@ type MethodName string
 const (
 	MethodGetByPrimaryKeys  MethodName = "getByPrimaryKeys"
 	MethodGetByBusinessKeys MethodName = "getByBusinessKeys"
+	MethodInsert            MethodName = "insert"
+	MethodUpdate            MethodName = "update"
+	MethodDelete            MethodName = "delete"
 )
 
 const DBExecutorVarName = "testSqlDb"
@@ -50,13 +53,23 @@ type dbExecutor interface {
 `, model.PackageName))
 
 	testWriter.Write(fmt.Appendf(nil, `
-package %s_test
-import "testing"
+package %s
+import (
+	"testing"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 `, model.PackageName))
 
 	d.TestSetup(testWriter, DBExecutorVarName, "")
 
+	ts, err := NewTestSuite()
+	if err != nil {
+		return err
+	}
+
 	for _, table := range model.Tables {
+		// GET
 		pk, bk, err := table.PkAndBk()
 		if err != nil {
 			return fmt.Errorf("Failed to fetch primary and business keys: %w", err)
@@ -66,17 +79,35 @@ import "testing"
 			return fmt.Errorf("Failed to create GET template by primary keys for table %s: %w", table.Name, err)
 		}
 
-		if bk != nil && len(bk) > 0 {
+		err = ts.Get(testWriter, table, pk, string(MethodGetByPrimaryKeys))
+		if err != nil {
+			return fmt.Errorf("Failed to create TestGET template by primary keys for table %s: %w", table.Name, err)
+		}
+
+		if len(bk) > 0 {
 			err = d.Get(writer, table, bk, string(MethodGetByBusinessKeys))
 			if err != nil {
 				return fmt.Errorf("Failed to create GET template by business keys for table %s: %w", table.Name, err)
 			}
+			err = ts.Get(testWriter, table, bk, string(MethodGetByBusinessKeys))
+			if err != nil {
+				return fmt.Errorf("Failed to create TestGET template by business keys for table %s: %w", table.Name, err)
+			}
 		}
+
+		// CREATE
+		err = d.Create(writer, table, string(MethodInsert))
+		if err != nil {
+			return fmt.Errorf("Failed to create insert template for table %s: %w", table.Name, err)
+		}
+
+		// UPDATE
+		// DELETE
 	}
 
 	code, err := format.Source(writer.Bytes())
 	if err != nil {
-		return fmt.Errorf("Failed to format code: %w", err)
+		return fmt.Errorf("Failed to format code: %w %v", err, writer.String())
 	}
 	testCode, err := format.Source(testWriter.Bytes())
 	if err != nil {

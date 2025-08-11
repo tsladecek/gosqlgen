@@ -16,7 +16,7 @@ type Column struct {
 	PrimaryKey    bool    // pk
 	ForeignKey    *Column // fk table.column
 	Table         *Table
-	Type          string
+	Type          ast.Expr
 	SoftDelete    bool // sd
 	BusinessKey   bool // bk
 	AutoIncrement bool // ai
@@ -136,8 +136,8 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 	stripPrefix := fmt.Sprintf("// %s: ", TagPrefix)
 	if cgroup != nil {
 		for _, c := range cgroup.List {
-			if strings.HasPrefix(c.Text, stripPrefix) {
-				t.Name = strings.TrimPrefix(c.Text, stripPrefix)
+			if after, ok := strings.CutPrefix(c.Text, stripPrefix); ok {
+				t.Name = after
 				return nil
 			}
 		}
@@ -212,7 +212,7 @@ func NewDBModel(f *ast.File) (*DBModel, error) {
 						return nil, fmt.Errorf("Failed to parse column from tag %s: %w", fff.Tag.Value, err)
 					}
 					column.Table = &table
-					column.Type = fmt.Sprintf("%v", fff.Type)
+					column.Type = fff.Type
 					column.FieldName = fff.Names[0].Name
 					table.Columns = append(table.Columns, column)
 				}
@@ -247,4 +247,18 @@ func (t *Table) PkAndBk() ([]*Column, []*Column, error) {
 	}
 
 	return pk, bk, nil
+}
+
+func (c *Column) TypeString() (string, error) {
+	switch t := c.Type.(type) {
+	case *ast.Ident:
+		return t.Name, nil
+	case *ast.SelectorExpr:
+		pkg, ok := t.X.(*ast.Ident)
+		if !ok {
+			return "", fmt.Errorf("Failed to parse type for column %s in table %s", c.Name, c.Table.Name)
+		}
+		return fmt.Sprintf("%s.%s", pkg.Name, t.Sel.Name), nil
+	}
+	return "", nil
 }

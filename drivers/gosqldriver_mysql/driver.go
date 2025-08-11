@@ -10,18 +10,40 @@ import (
 )
 
 type driver struct {
-	getTemplate *template.Template
+	getTemplate    *template.Template
+	insertTemplate *template.Template
 }
 
 const getTemplate = `
-func ({{ .ObjName }} {{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor, {{ range .Keys }}{{.Name}} {{.Type}},{{ end }}) ({{.StructName}}, error) {
+func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor, {{ range .Keys }}{{.Name}} {{.Type}},{{ end }}) error {
 	err := db.QueryRowContext(ctx, "SELECT {{ .QueryColumns }} FROM {{ .TableName }} WHERE {{ .QueryCond }}", {{ .QueryCondValues }}).Scan({{ .ScanColumns }})
 	
 	if err != nil {
-		return {{.StructName}}{}, err
+		return err
 	}
 
-	return {{.StructName}}{}, nil
+	return nil
+}
+`
+
+const insertTemplate = `
+func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor) error {
+	res, err := db.ExecContext(ctx, "INSERT INTO {{.TableName}} ({{.ColumnNames}}) VALUES ({{.ColumnValuesPlaceholders}})", {{.ColumnValues}})
+	if err != nil {
+		return err
+	}
+
+	{{if .AutoIncrementColumn }}
+		id, err := res.LastInsertId()
+		if err != nil {
+			return err
+		}
+		t.{{.AutoIncrementColumn.FieldName}} = {{.AIColumnType}}(id)
+	{{else}}
+	_ = res
+	{{end}}
+
+	return nil
 }
 `
 
@@ -31,27 +53,46 @@ func New() (gosqlgen.Driver, error) {
 		return driver{}, err
 	}
 
-	return driver{getTemplate: getTmpl}, nil
+	insertTmpl, err := template.New("insert").Parse(insertTemplate)
+	if err != nil {
+		return driver{}, err
+	}
+
+	return driver{getTemplate: getTmpl, insertTemplate: insertTmpl}, nil
 }
 
-func (d driver) get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
+func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
 	queryColumns := make([]string, len(table.Columns))
 	scanColumns := make([]string, len(table.Columns))
 	queryCond := make([]string, 0, len(keys))
 	queryCondValues := make([]string, 0, len(keys))
 	objName := "t"
+
+	for _, c := range keys {
+		queryCond = append(queryCond, fmt.Sprintf("%s = ?", c.Name))
+		queryCondValues = append(queryCondValues, fmt.Sprintf("%s", c.Name))
+	}
+
 	for i, c := range table.Columns {
 		queryColumns[i] = c.Name
 		scanColumns[i] = fmt.Sprintf("&%s.%s", objName, c.FieldName)
 
 		if c.SoftDelete {
-			// TODO
-		}
-	}
+			cType, err := c.TypeString()
+			if err != nil {
+				return fmt.Errorf("can not construct statement due to bad soft delete column type: %w", err)
+			}
 
-	for _, c := range keys {
-		queryCond = append(queryCond, fmt.Sprintf("%s = ?", c.Name))
-		queryCondValues = append(queryCondValues, fmt.Sprintf("%s", c.Name))
+			switch cType {
+			case "bool":
+				queryCond = append(queryCond, fmt.Sprintf("%s = true", c.Name))
+			case "sql.NullTime":
+				queryCond = append(queryCond, fmt.Sprintf("%s IS NOT NULL", c.Name))
+			case "string":
+				queryCond = append(queryCond, fmt.Sprintf(`%s = ?`, c.Name))
+				queryCondValues = append(queryCondValues, `""`)
+			}
+		}
 	}
 
 	data := make(map[string]any)
@@ -68,15 +109,43 @@ func (d driver) get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column,
 	return nil
 }
 
-func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
-	err := d.get(w, table, keys, methodName)
-	if err != nil {
-		return err
+func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) error {
+	data := make(map[string]any)
+	objName := "t"
+	data["ObjName"] = objName
+	data["StructName"] = table.StructName
+	data["MethodName"] = methodName
+
+	columnNames := []string{}
+	columnValues := []string{}
+	columnPlaceholders := []string{}
+	var aiCol *gosqlgen.Column
+
+	for _, col := range table.Columns {
+		if col.PrimaryKey {
+			if col.AutoIncrement {
+				aiCol = col
+			}
+			continue
+		}
+
+		if col.SoftDelete {
+			continue
+		}
+
+		columnNames = append(columnNames, col.Name)
+		columnValues = append(columnValues, fmt.Sprintf("%s.%s", objName, col.FieldName))
+		columnPlaceholders = append(columnPlaceholders, "?")
 	}
 
-	return nil
-}
-func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) error {
+	data["TableName"] = table.Name
+	data["ColumnNames"] = strings.Join(columnNames, ",")
+	data["ColumnValues"] = strings.Join(columnValues, ",")
+	data["ColumnValuesPlaceholders"] = strings.Join(columnPlaceholders, ",")
+	data["AutoIncrementColumn"] = aiCol
+	data["AIColumnType"] = "int"
+
+	d.insertTemplate.Execute(w, data)
 	return nil
 }
 func (d driver) Update(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
@@ -87,7 +156,11 @@ func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 }
 
 func (d driver) TestSetup(w io.Writer, dbExecutorVarName string, migrationsPath string) error {
-	w.Write([]byte(`func TestNotImplemented(t *testing.T){}`))
+	w.Write([]byte(`
+		import "database/sql"
+
+		var testDb *sql.DB
+`))
 
 	return nil
 }
