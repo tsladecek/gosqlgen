@@ -169,13 +169,3 @@ func (d driver) Update(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
 	return nil
 }
-
-func (d driver) TestSetup(w io.Writer, dbExecutorVarName string, migrationsPath string) error {
-	w.Write([]byte(`
-		import "database/sql"
-
-		var testDb *sql.DB
-`))
-
-	return nil
-}

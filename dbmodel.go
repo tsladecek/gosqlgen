@@ -11,22 +11,22 @@ import (
 const TagPrefix = "gosqlgen"
 
 type Column struct {
-	Name          string
-	FieldName     string
-	PrimaryKey    bool    // pk
-	ForeignKey    *Column // fk table.column
-	Table         *Table
-	Type          ast.Expr
-	SoftDelete    bool // sd
-	BusinessKey   bool // bk
-	AutoIncrement bool // ai
+	Name          string   // name of the sql column
+	FieldName     string   // name of the field in the struct
+	PrimaryKey    bool     // is this a primary key column?
+	ForeignKey    *Column  // address of the reference column. nil if not FK
+	Table         *Table   // address of the table this Column belongs to
+	Type          ast.Expr // go type of the column in the struct
+	SoftDelete    bool     // does this column represent soft deletion (sd)
+	BusinessKey   bool     // is this business key (bk)
+	AutoIncrement bool     // is this auto incremented? Important for inserts, since this column must be fetched
 
 	fk string
 }
 
 type Table struct {
-	Name       string
-	StructName string
+	Name       string // name of the sql table
+	StructName string // name of the struct
 	Columns    []*Column
 }
 

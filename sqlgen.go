@@ -13,8 +13,6 @@ type Driver interface {
 	Create(w io.Writer, table *Table, methodName string) error
 	Update(w io.Writer, table *Table, keys []*Column, methodName string) error
 	Delete(w io.Writer, table *Table, keys []*Column, methodName string) error
-
-	TestSetup(w io.Writer, dbExecutorVarName string, migrationsPaths string) error
 }
 
 type MethodName string
@@ -64,12 +62,14 @@ type dbExecutor interface {
 package %s
 import (
 	"testing"
+	"database/sql"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-`, header, model.PackageName))
 
-	d.TestSetup(testWriter, DBExecutorVarName, "")
+var testDb *sql.DB
+`, header, model.PackageName))
 
 	ts, err := NewTestSuite()
 	if err != nil {
@@ -117,6 +117,7 @@ import (
 	if err != nil {
 		return fmt.Errorf("Failed to format code: %w %v", err, writer.String())
 	}
+
 	testCode, err := format.Source(testWriter.Bytes())
 	if err != nil {
 		return fmt.Errorf("Failed to format test code: %w", err)
