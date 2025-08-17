@@ -18,11 +18,12 @@ type Driver interface {
 type MethodName string
 
 const (
-	MethodGetByPrimaryKeys  MethodName = "getByPrimaryKeys"
-	MethodGetByBusinessKeys MethodName = "getByBusinessKeys"
-	MethodInsert            MethodName = "insert"
-	MethodUpdate            MethodName = "update"
-	MethodDelete            MethodName = "delete"
+	MethodGetByPrimaryKeys     MethodName = "getByPrimaryKeys"
+	MethodGetByBusinessKeys    MethodName = "getByBusinessKeys"
+	MethodInsert               MethodName = "insert"
+	MethodUpdateByPrimaryKeys  MethodName = "updateByPrimaryKeys"
+	MethodUpdateByBusinessKeys MethodName = "updateByBusinessKeys"
+	MethodDelete               MethodName = "delete"
 )
 
 const DBExecutorVarName = "testSqlDb"
@@ -87,19 +88,10 @@ var testDb *sql.DB
 			return fmt.Errorf("Failed to create GET template by primary keys for table %s: %w", table.Name, err)
 		}
 
-		err = ts.Get(testWriter, table, pk, string(MethodGetByPrimaryKeys))
-		if err != nil {
-			return fmt.Errorf("Failed to create TestGET template by primary keys for table %s: %w", table.Name, err)
-		}
-
 		if len(bk) > 0 {
 			err = d.Get(writer, table, bk, string(MethodGetByBusinessKeys))
 			if err != nil {
 				return fmt.Errorf("Failed to create GET template by business keys for table %s: %w", table.Name, err)
-			}
-			err = ts.Get(testWriter, table, bk, string(MethodGetByBusinessKeys))
-			if err != nil {
-				return fmt.Errorf("Failed to create TestGET template by business keys for table %s: %w", table.Name, err)
 			}
 		}
 
@@ -110,7 +102,21 @@ var testDb *sql.DB
 		}
 
 		// UPDATE
+		err = d.Update(writer, table, pk, string(MethodUpdateByPrimaryKeys))
+		if err != nil {
+			return fmt.Errorf("Failed to create update template for table %s by primary keys: %w", table.Name, err)
+		}
+
+		err = d.Update(writer, table, bk, string(MethodUpdateByBusinessKeys))
+		if err != nil {
+			return fmt.Errorf("Failed to create update template for table %s by business keys: %w", table.Name, err)
+		}
 		// DELETE
+
+		err = ts.Generate(testWriter, table)
+		if err != nil {
+			return fmt.Errorf("Failed to create TestGET template by primary keys for table %s: %w", table.Name, err)
+		}
 	}
 
 	code, err := format.Source(writer.Bytes())

@@ -14,6 +14,8 @@ import (
 type driver struct {
 	getTemplate    *template.Template
 	insertTemplate *template.Template
+	updateTemplate *template.Template
+	deleteTemplate *template.Template
 }
 
 const getTemplate = `
@@ -49,6 +51,13 @@ func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbE
 }
 `
 
+const updateTemplate = `
+func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE {{.TableName}} SET {{ .ColumnPlaceholders }} WHERE {{ .KeysPlaceholders }}", {{.ColumnValues}}, {{ .KeysValues }})
+	return err
+}
+`
+
 func New() (gosqlgen.Driver, error) {
 	getTmpl, err := template.New("get").Parse(getTemplate)
 	if err != nil {
@@ -60,7 +69,12 @@ func New() (gosqlgen.Driver, error) {
 		return driver{}, err
 	}
 
-	return driver{getTemplate: getTmpl, insertTemplate: insertTmpl}, nil
+	updateTmpl, err := template.New("update").Parse(updateTemplate)
+	if err != nil {
+		return driver{}, err
+	}
+
+	return driver{getTemplate: getTmpl, insertTemplate: insertTmpl, updateTemplate: updateTmpl}, nil
 }
 
 func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
@@ -141,9 +155,9 @@ func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) er
 	}
 
 	data["TableName"] = table.Name
-	data["ColumnNames"] = strings.Join(columnNames, ",")
-	data["ColumnValues"] = strings.Join(columnValues, ",")
-	data["ColumnValuesPlaceholders"] = strings.Join(columnPlaceholders, ",")
+	data["ColumnNames"] = strings.Join(columnNames, ", ")
+	data["ColumnValues"] = strings.Join(columnValues, ", ")
+	data["ColumnValuesPlaceholders"] = strings.Join(columnPlaceholders, ", ")
 	data["AutoIncrementColumn"] = aiCol
 	data["AIColumnType"] = "int"
 
@@ -164,6 +178,40 @@ func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) er
 	return nil
 }
 func (d driver) Update(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
+	data := make(map[string]any)
+	objName := "t"
+	data["ObjName"] = objName
+	data["StructName"] = table.StructName
+	data["MethodName"] = methodName
+
+	columnValues := []string{}
+	columnPlaceholders := []string{}
+
+	keysValues := []string{}
+	keysPlaceholders := []string{}
+
+	for _, k := range keys {
+		keysValues = append(keysValues, fmt.Sprintf("%s.%s", objName, k.FieldName))
+		keysPlaceholders = append(keysPlaceholders, fmt.Sprintf("%s=?", k.Name))
+	}
+
+	for _, col := range table.Columns {
+		if col.PrimaryKey || col.BusinessKey || col.SoftDelete {
+			continue
+		}
+
+		columnValues = append(columnValues, fmt.Sprintf("%s.%s", objName, col.FieldName))
+		columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
+	}
+
+	data["TableName"] = table.Name
+	data["ColumnValues"] = strings.Join(columnValues, ", ")
+	data["ColumnPlaceholders"] = strings.Join(columnPlaceholders, ", ")
+
+	data["KeysValues"] = strings.Join(keysValues, ", ")
+	data["KeysPlaceholders"] = strings.Join(keysPlaceholders, " AND ")
+
+	d.updateTemplate.Execute(w, data)
 	return nil
 }
 func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {

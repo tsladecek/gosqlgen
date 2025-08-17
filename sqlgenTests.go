@@ -8,17 +8,25 @@ import (
 	"text/template"
 )
 
-const getsertTestTemplate = `
-func TestGetSert_{{.StructName}}{{.MethodName}}(t *testing.T) {
+const testTemplate = `
+func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 	ctx := t.Context()
 	var err error
 
 	{{ .Inserts }}
 
-	got := {{.StructName}}{}
-	err = got.{{.MethodName}}(ctx, testDb, {{ range .Keys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	// Get By Primary Keys
+	gotByPk := {{.StructName}}{}
+	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
 	require.NotNil(t, err)
-	assert.Equal(t, {{.TableVarName}}, got)
+	assert.Equal(t, {{.TableVarName}}, gotByPk)
+
+	// Get By Business Keys
+	gotByBk := {{.StructName}}{}
+	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.NotNil(t, err)
+	assert.Equal(t, {{.TableVarName}}, gotByBk)
+	assert.Equal(t, gotByPk, gotByBk)
 }
 `
 
@@ -46,7 +54,7 @@ type testSuite struct {
 }
 
 func NewTestSuite() (testSuite, error) {
-	getsertTmpl, err := template.New("getsert").Parse(getsertTestTemplate)
+	getsertTmpl, err := template.New("getsert").Parse(testTemplate)
 	if err != nil {
 		return testSuite{}, err
 	}
@@ -54,11 +62,18 @@ func NewTestSuite() (testSuite, error) {
 	return testSuite{getsertTestTemplate: getsertTmpl}, nil
 }
 
-func (ts testSuite) Get(w io.Writer, table *Table, keys []*Column, methodName string) error {
+func (ts testSuite) Generate(w io.Writer, table *Table) error {
+	pk, bk, err := table.PkAndBk()
+	if err != nil {
+		return fmt.Errorf("Could not parse primary and business keys from table: %w", err)
+	}
+
 	data := make(map[string]any)
 	data["StructName"] = table.StructName
-	data["MethodName"] = methodName
-	data["Keys"] = keys
+	data["MethodGetByPrimaryKeys"] = MethodGetByPrimaryKeys
+	data["MethodGetByBusinessKeys"] = MethodGetByBusinessKeys
+	data["PrimaryKeys"] = pk
+	data["BusinessKeys"] = bk
 	data["TableVarName"] = fmt.Sprintf("tbl_%s", table.Name)
 
 	var inserts bytes.Buffer
