@@ -7,14 +7,15 @@ import "database/sql"
 type User struct {
 	RawId int    `gosqlgen:"_id,pk ai"`
 	Id    string `gosqlgen:"id,bk"`
-	Name  int    `gosqlgen:"name"`
+	Name  string `gosqlgen:"name"`
 }
 
 // gosqlgen: countries
 type Country struct {
 	RawId int    `gosqlgen:"_id,pk ai"`
 	Id    string `gosqlgen:"id,bk"`
-	Name  int    `gosqlgen:"name"`
+	Name  string `gosqlgen:"name"`
+	GPS   string `gosqlgen:"gps"`
 }
 
 // gosqlgen: addresses

@@ -129,6 +129,8 @@ var testDb *sql.DB
 		return fmt.Errorf("Failed to format test code: %w", err)
 	}
 
+	// testCode := testWriter.Bytes()
+
 	err = os.WriteFile("generatedMethods.go", code, 0666)
 	if err != nil {
 		return fmt.Errorf("Failed writing code to a file: %w", err)
