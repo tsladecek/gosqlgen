@@ -20,141 +20,6 @@ type dbExecutor interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
-func (t *User) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name FROM users WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *User) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name FROM users WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *User) insert(ctx context.Context, db dbExecutor) error {
-	res, err := db.ExecContext(ctx, "INSERT INTO users (id, name) VALUES (?, ?)", t.Id, t.Name)
-	if err != nil {
-		return err
-	}
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-	t.RawId = int(id)
-
-	return nil
-}
-
-func (t *User) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET name = ? WHERE _id=?", t.Name, t.RawId)
-	return err
-}
-
-func (t *User) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET name = ? WHERE id=?", t.Name, t.Id)
-	return err
-}
-
-func (t *User) delete(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM users WHERE _id=?", t.RawId)
-	return err
-}
-
-func (t *Admin) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, name FROM admins WHERE _id = ?", _id).Scan(&t.RawId, &t.Name)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *Admin) insert(ctx context.Context, db dbExecutor) error {
-	res, err := db.ExecContext(ctx, "INSERT INTO admins (name) VALUES (?)", t.Name)
-	if err != nil {
-		return err
-	}
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-	t.RawId = int(id)
-
-	return nil
-}
-
-func (t *Admin) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE admins SET name = ? WHERE _id=?", t.Name, t.RawId)
-	return err
-}
-
-func (t *Admin) delete(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM admins WHERE _id=?", t.RawId)
-	return err
-}
-
-func (t *Country) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps FROM countries WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *Country) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps FROM countries WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *Country) insert(ctx context.Context, db dbExecutor) error {
-	res, err := db.ExecContext(ctx, "INSERT INTO countries (id, name, gps) VALUES (?, ?, ?)", t.Id, t.Name, t.GPS)
-	if err != nil {
-		return err
-	}
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-	t.RawId = int(id)
-
-	return nil
-}
-
-func (t *Country) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ? WHERE _id=?", t.Name, t.GPS, t.RawId)
-	return err
-}
-
-func (t *Country) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ? WHERE id=?", t.Name, t.GPS, t.Id)
-	return err
-}
-
-func (t *Country) delete(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM countries WHERE _id=?", t.RawId)
-	return err
-}
-
 func (t *Address) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int32) error {
 	err := db.QueryRowContext(ctx, "SELECT _id, id, address, user_id, country_id, deleted_at FROM addresses WHERE _id = ? AND deleted_at IS NOT NULL", _id).Scan(&t.RawId, &t.Id, &t.Address, &t.UserId, &t.CountryId, &t.DeletedAt)
 
@@ -252,5 +117,140 @@ func (t *AddressBook) updateByBusinessKeys(ctx context.Context, db dbExecutor) e
 
 func (t *AddressBook) delete(ctx context.Context, db dbExecutor) error {
 	_, err := db.ExecContext(ctx, "DELETE FROM addresses_book WHERE _id=?", t.RawId)
+	return err
+}
+
+func (t *Admin) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
+	err := db.QueryRowContext(ctx, "SELECT _id, name FROM admins WHERE _id = ?", _id).Scan(&t.RawId, &t.Name)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Admin) insert(ctx context.Context, db dbExecutor) error {
+	res, err := db.ExecContext(ctx, "INSERT INTO admins (name) VALUES (?)", t.Name)
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	t.RawId = int(id)
+
+	return nil
+}
+
+func (t *Admin) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE admins SET name = ? WHERE _id=?", t.Name, t.RawId)
+	return err
+}
+
+func (t *Admin) delete(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM admins WHERE _id=?", t.RawId)
+	return err
+}
+
+func (t *Country) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps FROM countries WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Country) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps FROM countries WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Country) insert(ctx context.Context, db dbExecutor) error {
+	res, err := db.ExecContext(ctx, "INSERT INTO countries (id, name, gps) VALUES (?, ?, ?)", t.Id, t.Name, t.GPS)
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	t.RawId = int(id)
+
+	return nil
+}
+
+func (t *Country) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ? WHERE _id=?", t.Name, t.GPS, t.RawId)
+	return err
+}
+
+func (t *Country) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ? WHERE id=?", t.Name, t.GPS, t.Id)
+	return err
+}
+
+func (t *Country) delete(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM countries WHERE _id=?", t.RawId)
+	return err
+}
+
+func (t *User) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name FROM users WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *User) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name FROM users WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *User) insert(ctx context.Context, db dbExecutor) error {
+	res, err := db.ExecContext(ctx, "INSERT INTO users (id, name) VALUES (?, ?)", t.Id, t.Name)
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	t.RawId = int(id)
+
+	return nil
+}
+
+func (t *User) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE users SET name = ? WHERE _id=?", t.Name, t.RawId)
+	return err
+}
+
+func (t *User) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE users SET name = ? WHERE id=?", t.Name, t.Id)
+	return err
+}
+
+func (t *User) delete(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM users WHERE _id=?", t.RawId)
 	return err
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"slices"
 	"strings"
 )
 
@@ -224,6 +225,10 @@ func NewDBModel(f *ast.File) (*DBModel, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to reconcile relationships: %w", err)
 	}
+
+	slices.SortFunc(dbModel.Tables, func(a, b *Table) int {
+		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+	})
 
 	return &dbModel, nil
 }
