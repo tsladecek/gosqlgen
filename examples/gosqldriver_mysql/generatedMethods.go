@@ -1,7 +1,7 @@
 // This is a generated code by the gosqlgen tool. Do not edit
 // see more at: github.com/tsladecek/gosqlgen
 
-package gosqlgen
+package gosqldrivermysql
 
 import (
 	"context"

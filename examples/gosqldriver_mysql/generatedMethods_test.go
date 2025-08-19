@@ -1,7 +1,7 @@
 // This is a generated code by the gosqlgen tool. Do not edit
 // see more at: github.com/tsladecek/gosqlgen
 
-package gosqlgen
+package gosqldrivermysql
 
 import (
 	"database/sql"
@@ -41,7 +41,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	// Update By Primary Keys
 	// Name
 	u = gotByPk
-	u.Name = "PFL6K6DQTGRHQRWW7TQX5CVBYD"
+	u.Name = "OOC23MA73GNGP63TGFID5GBXLE"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -54,7 +54,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	// Update By Business Keys
 	// Name
 	u = gotByBk
-	u.Name = "TSXTXNVESHOUUV3F672JJQBTVS"
+	u.Name = "LMXXHSC5LPLFWUN4KEMJINPWLJ"
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -96,7 +96,7 @@ func TestGoSQLGen_Admin(t *testing.T) {
 	// Update By Primary Keys
 	// Name
 	u = gotByPk
-	u.Name = "S6XTLTX6DW5SPT5IDNBG5PTFLT"
+	u.Name = "7KY2P3NL7LT2PEXTPYHZJZ2ZQI"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -142,7 +142,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 	// Update By Primary Keys
 	// Name
 	u = gotByPk
-	u.Name = "FFWGAW6UDHVYVVOXUGIECG7CSM"
+	u.Name = "AJFILI4JKZQRXVDJMGRZUG5LIJ"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -154,7 +154,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 
 	// GPS
 	u = gotByPk
-	u.GPS = "EKG6JWX4I7H3ZHXNGVCBT53GDF"
+	u.GPS = "6D6PR5VK7OCZK3ANBVQGQBY2ZH"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 	// Update By Business Keys
 	// Name
 	u = gotByBk
-	u.Name = "CFSXYPW5R4VPME4VWZPXIVLSZD"
+	u.Name = "IBLHDWG55HI4O6R5HRBQR6NPUJ"
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -178,7 +178,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 
 	// GPS
 	u = gotByBk
-	u.GPS = "MVC7K7H4S2XC7JJP7EYPPOADMV"
+	u.GPS = "LTTS4TJNXMVYBOTV25GV4SM7HB"
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -231,7 +231,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	// Update By Primary Keys
 	// UserId
 	u = gotByPk
-	u.UserId = 33
+	u.UserId = 63
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -243,7 +243,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 
 	// CountryId
 	u = gotByPk
-	u.CountryId = 71
+	u.CountryId = 189
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -256,7 +256,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	// Update By Business Keys
 	// UserId
 	u = gotByBk
-	u.UserId = 91
+	u.UserId = 244
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -267,7 +267,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 
 	// CountryId
 	u = gotByBk
-	u.CountryId = 123
+	u.CountryId = 116
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -324,7 +324,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	// Update By Primary Keys
 	// AddressId
 	u = gotByPk
-	u.AddressId = 80
+	u.AddressId = 41
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -337,7 +337,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	// Update By Business Keys
 	// AddressId
 	u = gotByBk
-	u.AddressId = 167
+	u.AddressId = 170
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 

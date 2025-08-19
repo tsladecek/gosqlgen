@@ -1,5 +1,5 @@
 //go:generate go run ../../cmd/main.go -driver gosqldriver_mysql
-package gosqlgen
+package gosqldrivermysql
 
 import "database/sql"
 
