@@ -8,14 +8,28 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/tsladecek/gosqlgen"
 	gosqldrivermysql "github.com/tsladecek/gosqlgen/drivers/gosqldriver_mysql"
 )
 
 func main() {
+	supportedDrivers := []string{"gosqldriver_mysql"}
+
 	debug := flag.Bool("debug", false, "debug")
+	driver := flag.String("driver", "", "Driver to use. Supported: "+strings.Join(supportedDrivers, ", "))
+
+	output := flag.String("output", "generatedMethods.go", "Path to output")
+	outputTest := flag.String("outputTest", "generatedMethods_test.go", "Path to output of test code")
+
 	flag.Parse()
+
+	if !slices.Contains(supportedDrivers, *driver) {
+		fmt.Println("Error: Unsupported driver. Supported: " + strings.Join(supportedDrivers, ", "))
+		os.Exit(1)
+	}
 
 	filename := os.Getenv("GOFILE")
 	if filename == "" {
@@ -42,7 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = gosqlgen.CreateTemplates(d, dbModel)
+	err = gosqlgen.CreateTemplates(d, dbModel, *output, *outputTest)
 	if err != nil {
 		panic(err)
 	}

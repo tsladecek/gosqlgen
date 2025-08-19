@@ -58,12 +58,12 @@ func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 	gotAfterUpdate = {{ $.StructName }}{}
 	err = gotAfterUpdate.{{ $.MethodGetByPrimaryKeys }}(ctx, testDb, {{ range $.PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}} )
 	require.NoError(t, err)
-
 	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
 	{{ end }}
 	{{ end }}
 	{{ end }}
 
+	// Delete
 	err = gotByPk.delete(ctx, testDb)
 	require.NoError(t, err)
 	gotAfterDelete := {{ $.StructName }}{}
@@ -135,7 +135,7 @@ func (ts testSuite) Generate(w io.Writer, table *Table) error {
 	updateableColumnsbk := make([]updatetableColumn, 0)
 
 	for _, c := range table.Columns {
-		if c.PrimaryKey || c.ForeignKey != nil || c.BusinessKey || c.SoftDelete {
+		if c.PrimaryKey || c.BusinessKey || c.SoftDelete {
 			continue
 		}
 

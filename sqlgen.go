@@ -28,7 +28,7 @@ const (
 
 const DBExecutorVarName = "testSqlDb"
 
-func CreateTemplates(d Driver, model *DBModel) error {
+func CreateTemplates(d Driver, model *DBModel, outputPath, outputTestPath string) error {
 	writer := new(bytes.Buffer)
 	testWriter := new(bytes.Buffer)
 
@@ -130,21 +130,18 @@ var testDb *sql.DB
 	if err != nil {
 		return fmt.Errorf("Failed to format code: %w %v", err, writer.String())
 	}
-	// code := writer.Bytes()
 
 	testCode, err := format.Source(testWriter.Bytes())
 	if err != nil {
 		return fmt.Errorf("Failed to format test code: %w", err)
 	}
 
-	// testCode := testWriter.Bytes()
-
-	err = os.WriteFile("generatedMethods.go", code, 0666)
+	err = os.WriteFile(outputPath, code, 0666)
 	if err != nil {
 		return fmt.Errorf("Failed writing code to a file: %w", err)
 	}
 
-	err = os.WriteFile("generatedMethods_test.go", testCode, 0666)
+	err = os.WriteFile(outputTestPath, testCode, 0666)
 	if err != nil {
 		return fmt.Errorf("Failed writing test code to a file: %w", err)
 	}

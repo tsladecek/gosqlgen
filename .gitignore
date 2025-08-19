@@ -24,9 +24,3 @@ go.work.sum
 
 # env file
 .env
-
-# vscode stuff
-.vscode/
-
-# generated code samples
-generated*
