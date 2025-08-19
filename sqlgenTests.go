@@ -23,12 +23,13 @@ func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, {{.TableVarName}}, gotByPk)
 
-	// Get By Business Keys
+	{{ if .BusinessKeys }}// Get By Business Keys
 	gotByBk := {{.StructName}}{}
 	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
 	require.NoError(t, err)
 	assert.Equal(t, {{.TableVarName}}, gotByBk)
 	assert.Equal(t, gotByPk, gotByBk)
+	{{ end }}
 	
 	{{ if and .UpdateableColumnsPK .UpdateableColumnsBK}}
 	var gotAfterUpdate {{.StructName}}
@@ -47,7 +48,7 @@ func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 
 	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
 	{{ end }}
-	// Update By Business Keys{{ range .UpdateableColumnsBK }}
+	{{ if .BusinessKeys }}// Update By Business Keys{{ range .UpdateableColumnsBK }}
 	// {{.FieldName}}
 	u = gotByBk
 	u.{{ .FieldName }} = {{ .NewValue }}
@@ -61,6 +62,13 @@ func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
 	{{ end }}
 	{{ end }}
+	{{ end }}
+
+	err = gotByPk.delete(ctx, testDb)
+	require.NoError(t, err)
+	gotAfterDelete := {{ $.StructName }}{}
+	err = gotAfterDelete.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.Error(t, err)
 	}
 `
 

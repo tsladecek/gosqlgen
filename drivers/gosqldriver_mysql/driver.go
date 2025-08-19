@@ -12,10 +12,11 @@ import (
 )
 
 type driver struct {
-	getTemplate    *template.Template
-	insertTemplate *template.Template
-	updateTemplate *template.Template
-	deleteTemplate *template.Template
+	getTemplate        *template.Template
+	insertTemplate     *template.Template
+	updateTemplate     *template.Template
+	softDeleteTemplate *template.Template
+	hardDeleteTemplate *template.Template
 }
 
 const getTemplate = `
@@ -53,7 +54,21 @@ func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbE
 
 const updateTemplate = `
 func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE {{.TableName}} SET {{ .ColumnPlaceholders }} WHERE {{ .KeysPlaceholders }}", {{.ColumnValues}}, {{ .KeysValues }})
+	_, err := db.ExecContext(ctx, "UPDATE {{.TableName}} SET {{ .ColumnPlaceholders }} WHERE {{ .KeysPlaceholders }}", {{.Values }})
+	return err
+}
+`
+
+const softDeleteTemplate = `
+func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "UPDATE {{.TableName}} SET {{ .ColumnPlaceholders }} WHERE {{ .KeysPlaceholders }}", {{.Values }})
+	return err
+}
+`
+
+const hardDeleteTemplate = `
+func ({{.ObjName}} *{{.StructName}}) {{.MethodName}}(ctx context.Context, db dbExecutor) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM {{.TableName}} WHERE {{ .KeysPlaceholders }}", {{ .KeysValues }})
 	return err
 }
 `
@@ -74,7 +89,17 @@ func New() (gosqlgen.Driver, error) {
 		return driver{}, err
 	}
 
-	return driver{getTemplate: getTmpl, insertTemplate: insertTmpl, updateTemplate: updateTmpl}, nil
+	softDeleteTmpl, err := template.New("softDelete").Parse(softDeleteTemplate)
+	if err != nil {
+		return driver{}, err
+	}
+
+	hardDeleteTmpl, err := template.New("hardDelete").Parse(hardDeleteTemplate)
+	if err != nil {
+		return driver{}, err
+	}
+
+	return driver{getTemplate: getTmpl, insertTemplate: insertTmpl, updateTemplate: updateTmpl, softDeleteTemplate: softDeleteTmpl, hardDeleteTemplate: hardDeleteTmpl}, nil
 }
 
 func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
@@ -184,8 +209,41 @@ func (d driver) Update(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 	data["StructName"] = table.StructName
 	data["MethodName"] = methodName
 
-	columnValues := []string{}
+	values := []string{}
 	columnPlaceholders := []string{}
+
+	keysPlaceholders := []string{}
+
+	for _, col := range table.Columns {
+		if col.PrimaryKey || col.BusinessKey || col.SoftDelete {
+			continue
+		}
+
+		values = append(values, fmt.Sprintf("%s.%s", objName, col.FieldName))
+		columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
+	}
+
+	for _, k := range keys {
+		values = append(values, fmt.Sprintf("%s.%s", objName, k.FieldName))
+		keysPlaceholders = append(keysPlaceholders, fmt.Sprintf("%s=?", k.Name))
+	}
+
+	data["TableName"] = table.Name
+	data["Values"] = strings.Join(values, ", ")
+	data["ColumnPlaceholders"] = strings.Join(columnPlaceholders, ", ")
+
+	data["KeysPlaceholders"] = strings.Join(keysPlaceholders, " AND ")
+
+	d.updateTemplate.Execute(w, data)
+	return nil
+}
+
+func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
+	data := make(map[string]any)
+	objName := "t"
+	data["ObjName"] = objName
+	data["StructName"] = table.StructName
+	data["MethodName"] = methodName
 
 	keysValues := []string{}
 	keysPlaceholders := []string{}
@@ -195,25 +253,47 @@ func (d driver) Update(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 		keysPlaceholders = append(keysPlaceholders, fmt.Sprintf("%s=?", k.Name))
 	}
 
-	for _, col := range table.Columns {
-		if col.PrimaryKey || col.BusinessKey || col.SoftDelete {
-			continue
-		}
-
-		columnValues = append(columnValues, fmt.Sprintf("%s.%s", objName, col.FieldName))
-		columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
-	}
-
 	data["TableName"] = table.Name
-	data["ColumnValues"] = strings.Join(columnValues, ", ")
-	data["ColumnPlaceholders"] = strings.Join(columnPlaceholders, ", ")
-
 	data["KeysValues"] = strings.Join(keysValues, ", ")
 	data["KeysPlaceholders"] = strings.Join(keysPlaceholders, " AND ")
 
+	softCols := make([]*gosqlgen.Column, 0)
+	for _, col := range table.Columns {
+		if col.SoftDelete {
+			softCols = append(softCols, col)
+		}
+	}
+
+	// this is hard delete
+	if len(softCols) == 0 {
+		d.hardDeleteTemplate.Execute(w, data)
+		return nil
+	}
+
+	columnValues := []string{}
+	columnPlaceholders := []string{}
+
+	for _, col := range softCols {
+		cType, err := col.TypeString()
+		if err != nil {
+			return fmt.Errorf("can not construct statement due to bad soft delete column type: %w", err)
+		}
+
+		switch cType {
+		case "bool":
+			columnValues = append(columnValues, "true")
+			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
+		case "sql.NullTime", "string", "time.Time":
+			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = CURRENT_TIMESTAMP", col.Name))
+		default:
+			return fmt.Errorf("Unsupported type for soft delete column %s.%s", col.Table.Name, col.Name)
+		}
+
+	}
+
+	data["Values"] = strings.Join(slices.Concat(columnValues, keysValues), ", ")
+	data["ColumnPlaceholders"] = strings.Join(columnPlaceholders, ", ")
+
 	d.updateTemplate.Execute(w, data)
-	return nil
-}
-func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column, methodName string) error {
 	return nil
 }

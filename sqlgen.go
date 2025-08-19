@@ -107,11 +107,18 @@ var testDb *sql.DB
 			return fmt.Errorf("Failed to create update template for table %s by primary keys: %w", table.Name, err)
 		}
 
-		err = d.Update(writer, table, bk, string(MethodUpdateByBusinessKeys))
-		if err != nil {
-			return fmt.Errorf("Failed to create update template for table %s by business keys: %w", table.Name, err)
+		if len(bk) > 0 {
+			err = d.Update(writer, table, bk, string(MethodUpdateByBusinessKeys))
+			if err != nil {
+				return fmt.Errorf("Failed to create update template for table %s by business keys: %w", table.Name, err)
+			}
 		}
+
 		// DELETE
+		err = d.Delete(writer, table, pk, string(MethodDelete))
+		if err != nil {
+			return fmt.Errorf("Failed to create delete template for table %s by primary keys: %w", table.Name, err)
+		}
 
 		err = ts.Generate(testWriter, table)
 		if err != nil {
@@ -123,6 +130,7 @@ var testDb *sql.DB
 	if err != nil {
 		return fmt.Errorf("Failed to format code: %w %v", err, writer.String())
 	}
+	// code := writer.Bytes()
 
 	testCode, err := format.Source(testWriter.Bytes())
 	if err != nil {

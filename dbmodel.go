@@ -96,29 +96,27 @@ func NewColumn(tag string) (*Column, error) {
 
 	if len(items) == 1 {
 		return c, nil
-	} else if len(items) > 2 {
-		return nil, errors.New("Invalid Column Spec: %s. Expecting at most two comma separated fields <column name>[,<pk|fk table.column|bk|sd>]")
 	}
 
-	m := strings.TrimSpace(items[1])
-	if m == "pk" {
-		c.PrimaryKey = true
-	} else if m == "pk ai" {
-		c.PrimaryKey = true
-		c.AutoIncrement = true
-	} else if strings.HasPrefix(m, "fk") {
-		fkFields := strings.Split(m, " ")
-		if len(fkFields) != 2 {
-			return nil, errors.New("Invalid Foreign key spec. Must be in format: fk table.column")
+	for _, tagItem := range items[1:] {
+		m := strings.TrimSpace(tagItem)
+		if m == "pk" {
+			c.PrimaryKey = true
+		} else if m == "pk ai" {
+			c.PrimaryKey = true
+			c.AutoIncrement = true
+		} else if strings.HasPrefix(m, "fk") {
+			fkFields := strings.Split(m, " ")
+			if len(fkFields) != 2 {
+				return nil, errors.New("Invalid Foreign key spec. Must be in format: fk table.column")
+			}
+			c.fk = fkFields[1]
+		} else if m == "sd" {
+			c.SoftDelete = true
+		} else if m == "bk" {
+			c.BusinessKey = true
 		}
-
-		c.fk = fkFields[1]
-	} else if m == "sd" {
-		c.SoftDelete = true
-	} else if m == "bk" {
-		c.BusinessKey = true
 	}
-
 	return c, nil
 }
 
