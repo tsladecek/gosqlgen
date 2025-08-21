@@ -21,8 +21,8 @@ func main() {
 	debug := flag.Bool("debug", false, "debug")
 	driver := flag.String("driver", "", "Driver to use. Supported: "+strings.Join(supportedDrivers, ", "))
 
-	output := flag.String("output", "generatedMethods.go", "Path to output")
-	outputTest := flag.String("outputTest", "generatedMethods_test.go", "Path to output of test code")
+	output := flag.String("out", "generatedMethods.go", "Path to output")
+	outputTest := flag.String("outTest", "generatedMethods_test.go", "Path to output of test code")
 
 	flag.Parse()
 

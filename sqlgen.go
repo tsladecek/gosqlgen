@@ -120,9 +120,11 @@ var testDb *sql.DB
 			return fmt.Errorf("Failed to create delete template for table %s by primary keys: %w", table.Name, err)
 		}
 
-		err = ts.Generate(testWriter, table)
-		if err != nil {
-			return fmt.Errorf("Failed to create TestGET template by primary keys for table %s: %w", table.Name, err)
+		if !table.SkipTests {
+			err = ts.Generate(testWriter, table)
+			if err != nil {
+				return fmt.Errorf("Failed to create TestGET template by primary keys for table %s: %w", table.Name, err)
+			}
 		}
 	}
 

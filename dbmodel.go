@@ -29,6 +29,7 @@ type Table struct {
 	Name       string // name of the sql table
 	StructName string // name of the struct
 	Columns    []*Column
+	SkipTests  bool
 }
 
 type DBModel struct {
@@ -136,7 +137,22 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 	if cgroup != nil {
 		for _, c := range cgroup.List {
 			if after, ok := strings.CutPrefix(c.Text, stripPrefix); ok {
-				t.Name = after
+				items := strings.Split(after, ",")
+				if len(items) == 0 {
+					return fmt.Errorf("Table name must not be empty")
+				}
+
+				t.Name = strings.TrimSpace(items[0])
+
+				if len(items) > 1 {
+					for _, item := range items {
+						item = strings.TrimSpace(item)
+						switch item {
+						case "skip tests":
+							t.SkipTests = true
+						}
+					}
+				}
 				return nil
 			}
 		}
