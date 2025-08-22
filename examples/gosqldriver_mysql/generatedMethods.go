@@ -156,7 +156,7 @@ func (t *Admin) delete(ctx context.Context, db dbExecutor) error {
 }
 
 func (t *Country) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps FROM countries WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS)
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps, continent FROM countries WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS, &t.Continent)
 
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (t *Country) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) 
 }
 
 func (t *Country) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps FROM countries WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS)
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name, gps, continent FROM countries WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name, &t.GPS, &t.Continent)
 
 	if err != nil {
 		return err
@@ -176,7 +176,7 @@ func (t *Country) getByBusinessKeys(ctx context.Context, db dbExecutor, id strin
 }
 
 func (t *Country) insert(ctx context.Context, db dbExecutor) error {
-	res, err := db.ExecContext(ctx, "INSERT INTO countries (id, name, gps) VALUES (?, ?, ?)", t.Id, t.Name, t.GPS)
+	res, err := db.ExecContext(ctx, "INSERT INTO countries (id, name, gps, continent) VALUES (?, ?, ?, ?)", t.Id, t.Name, t.GPS, t.Continent)
 	if err != nil {
 		return err
 	}
@@ -191,12 +191,12 @@ func (t *Country) insert(ctx context.Context, db dbExecutor) error {
 }
 
 func (t *Country) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ? WHERE _id=?", t.Name, t.GPS, t.RawId)
+	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ?, continent = ? WHERE _id=?", t.Name, t.GPS, t.Continent, t.RawId)
 	return err
 }
 
 func (t *Country) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ? WHERE id=?", t.Name, t.GPS, t.Id)
+	_, err := db.ExecContext(ctx, "UPDATE countries SET name = ?, gps = ?, continent = ? WHERE id=?", t.Name, t.GPS, t.Continent, t.Id)
 	return err
 }
 

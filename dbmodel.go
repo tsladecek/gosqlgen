@@ -21,6 +21,7 @@ type Column struct {
 	SoftDelete    bool     // does this column represent soft deletion (sd)
 	BusinessKey   bool     // is this business key (bk)
 	AutoIncrement bool     // is this auto incremented? Important for inserts, since this column must be fetched
+	SQLType       string   // this can be driver specific
 
 	fk string
 }
@@ -91,16 +92,21 @@ func NewColumn(tag string) (*Column, error) {
 	if tag == "" {
 		return nil, nil
 	}
-	items := strings.Split(tag, ",")
+	items := strings.Split(tag, ";")
+
+	if len(items) < 2 {
+		return nil, fmt.Errorf("Invalid tag %s. Must have two required fields: name,sql type (e.g. name,varchar(31))", tag)
+	}
 
 	c := &Column{}
 	c.Name = items[0]
+	c.SQLType = items[1]
 
-	if len(items) == 1 {
+	if len(items) == 2 {
 		return c, nil
 	}
 
-	for _, tagItem := range items[1:] {
+	for _, tagItem := range items[2:] {
 		m := strings.TrimSpace(tagItem)
 		if m == "pk" {
 			c.PrimaryKey = true
@@ -132,12 +138,14 @@ func (t *Table) GetColumn(columnName string) (*Column, error) {
 	return nil, fmt.Errorf("Column %s not found", columnName)
 }
 
+var ErrNoTableTag = errors.New("Table tag not found")
+
 func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 	stripPrefix := fmt.Sprintf("// %s: ", TagPrefix)
 	if cgroup != nil {
 		for _, c := range cgroup.List {
 			if after, ok := strings.CutPrefix(c.Text, stripPrefix); ok {
-				items := strings.Split(after, ",")
+				items := strings.Split(after, ";")
 				if len(items) == 0 {
 					return fmt.Errorf("Table name must not be empty")
 				}
@@ -158,7 +166,7 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 		}
 	}
 
-	return fmt.Errorf("Make sure that the struct has a doc comment line of following format: // %s:<tableName>", TagPrefix)
+	return ErrNoTableTag
 }
 
 func (d *DBModel) ReconcileRelationships() error {
@@ -195,6 +203,7 @@ func (d *DBModel) ReconcileRelationships() error {
 
 func NewDBModel(f *ast.File) (*DBModel, error) {
 	dbModel := DBModel{Tables: make([]*Table, 0), PackageName: f.Name.Name}
+MainLoop:
 	for _, decl := range f.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {
@@ -206,20 +215,25 @@ func NewDBModel(f *ast.File) (*DBModel, error) {
 		for _, spec := range genDecl.Specs {
 			typeSpec, ok := spec.(*ast.TypeSpec)
 			if !ok {
-				continue
+				continue MainLoop
 			}
 
 			x, isStruct := typeSpec.Type.(*ast.StructType)
 			if !isStruct {
-				continue
+				continue MainLoop
 			}
+			table.StructName = typeSpec.Name.Name
 
 			err := table.ParseTableName(genDecl.Doc)
+			if errors.Is(err, ErrNoTableTag) {
+				fmt.Printf("Skipped struct %s, no parseable table definition found. If this is an error, please add it in the comment above the type", table.StructName)
+				continue MainLoop
+			}
+
 			if err != nil {
 				return nil, fmt.Errorf("Failed to parse table name: %w", err)
 			}
 
-			table.StructName = typeSpec.Name.Name
 			if x.Fields != nil {
 				for _, fff := range x.Fields.List {
 					column, err := NewColumn(fff.Tag.Value)
@@ -262,7 +276,7 @@ func (t *Table) PkAndBk() ([]*Column, []*Column, error) {
 	}
 
 	if len(pk) == 0 {
-		return nil, nil, fmt.Errorf("Table %s has no primary key", t.Name)
+		return nil, nil, fmt.Errorf("Table %s (%s) has no primary key", t.Name, t.StructName)
 	}
 
 	return pk, bk, nil

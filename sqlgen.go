@@ -13,6 +13,8 @@ type Driver interface {
 	Create(w io.Writer, table *Table, methodName string) error
 	Update(w io.Writer, table *Table, keys []*Column, methodName string) error
 	Delete(w io.Writer, table *Table, keys []*Column, methodName string) error
+	// Generates random value given the sql type of the column
+	RandValue(c *Column) (any, error)
 }
 
 type MethodName string
@@ -121,9 +123,9 @@ var testDb *sql.DB
 		}
 
 		if !table.SkipTests {
-			err = ts.Generate(testWriter, table)
+			err = ts.Generate(testWriter, d, table)
 			if err != nil {
-				return fmt.Errorf("Failed to create TestGET template by primary keys for table %s: %w", table.Name, err)
+				return fmt.Errorf("Failed to create test template for table %s: %w", table.Name, err)
 			}
 		}
 	}
