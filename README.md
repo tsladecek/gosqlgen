@@ -5,7 +5,20 @@
 
 SQL method go code generator based on table annotations using field tags.
 
-Supported tags:
+## Table and Column definition
+### Table
+Table definition is expected as a comment of the struct type in following format:
+
+`gosqlgen:table_name: REQUIRED[FLAGS]`
+
+Where FLAGS are semicolon separated modifiers. Supported are:
+- `skip tests` - tests will be skipped for this table
+
+### Column
+Column definition is expected as a field tag (similar to json tag) in following format:
+
+`gosqlgen:"column_name: REQUIRED;sql_type:REQUIRED[FLAGS]"`
+Where FLAGS are semicolon separated modifiers. Supported are:
 - `pk` - primary key
 - `pk ai` - primary key auto incremented. Useful for inserts
 - `bk` - business key
@@ -17,25 +30,24 @@ Supported tags:
 Given following table spec:
 
 ```go
-//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql -output generatedMethods.go -outputTest generatedMethods_test.go
+//go:generate go run cmd/main.go -driver gosqldriver_mysql -out generatedMethods.go -outTest generatedMethods_test.go
 package dbrepo
 
 
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id,pk ai"`
-	Id    string `gosqlgen:"id,bk"`
-	Name  string `gosqlgen:"name"`
+	RawId int    `gosqlgen:"_id;int;pk ai"`
+	Id    string `gosqlgen:"id;varchar(255);bk"`
+	Name  string `gosqlgen:"name;varchar(255)"`
 }
 
 // gosqlgen: addresses
 type Address struct {
-	RawId     int32        `gosqlgen:"_id,pk ai"`
-	Id        string       `gosqlgen:"id,bk"`
-	Address   string       `gosqlgen:"address,bk"`
-	UserId    int          `gosqlgen:"user_id,fk users._id"`
-	CountryId int          `gosqlgen:"country_id, fk countries._id"`
-	DeletedAt sql.NullTime `gosqlgen:"deleted_at,sd"`
+	RawId     int32        `gosqlgen:"_id;int;pk ai"`
+	Id        string       `gosqlgen:"id;int;varchar(255);bk"`
+	Address   string       `gosqlgen:"address;varchar(255);bk"`
+	UserId    int          `gosqlgen:"user_id;int;fk users._id"`
+	DeletedAt sql.NullTime `gosqlgen:"deleted_at;datetime;sd"`
 }
 ```
 

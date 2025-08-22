@@ -2,10 +2,8 @@ package gosqlgen
 
 import (
 	"bytes"
-	crand "crypto/rand"
 	"fmt"
 	"io"
-	"math/rand"
 	"strings"
 	"text/template"
 )
@@ -109,23 +107,16 @@ type updatetableColumn struct {
 	NewValue  any
 }
 
-func newUpdateableColumn(c *Column) (updatetableColumn, error) {
-	t, err := c.TypeString()
-	if err != nil {
-		return updatetableColumn{}, fmt.Errorf("Could not infer type of column")
+func updateableValuePostProcess(v any) any {
+	if vs, ok := v.(string); ok {
+		// surround with quotes if string
+		return fmt.Sprintf(`"%s"`, vs)
 	}
 
-	switch t {
-	case "int", "int8", "int16", "int32", "int64":
-		return updatetableColumn{FieldName: c.FieldName, NewValue: rand.Intn(255)}, nil
-	case "string":
-		return updatetableColumn{FieldName: c.FieldName, NewValue: fmt.Sprintf(`"%s"`, crand.Text())}, nil
-	}
-
-	return updatetableColumn{}, fmt.Errorf("Can not infer new update value for column %s", c.Name)
+	return v
 }
 
-func (ts testSuite) Generate(w io.Writer, table *Table) error {
+func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
 	pk, bk, err := table.PkAndBk()
 	if err != nil {
 		return fmt.Errorf("Could not parse primary and business keys from table: %w", err)
@@ -139,15 +130,18 @@ func (ts testSuite) Generate(w io.Writer, table *Table) error {
 			continue
 		}
 
-		ucpk, err := newUpdateableColumn(c)
+		vpk, err := driver.RandValue(c)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to infer updateable value for column %v: %w", *c, err)
 		}
 
-		ucbk, err := newUpdateableColumn(c)
+		vbk, err := driver.RandValue(c)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to infer updateable value for column %v: %w", *c, err)
 		}
+
+		ucpk := updatetableColumn{FieldName: c.FieldName, NewValue: updateableValuePostProcess(vpk)}
+		ucbk := updatetableColumn{FieldName: c.FieldName, NewValue: updateableValuePostProcess(vbk)}
 
 		updateableColumnspk = append(updateableColumnspk, ucpk)
 		updateableColumnsbk = append(updateableColumnsbk, ucbk)

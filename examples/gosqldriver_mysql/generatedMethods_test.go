@@ -49,7 +49,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	// Update By Primary Keys
 	// UserId
 	u = gotByPk
-	u.UserId = 104
+	u.UserId = 111
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -61,7 +61,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 
 	// CountryId
 	u = gotByPk
-	u.CountryId = 113
+	u.CountryId = 49
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -74,7 +74,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	// Update By Business Keys
 	// UserId
 	u = gotByBk
-	u.UserId = 63
+	u.UserId = 39
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -85,7 +85,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 
 	// CountryId
 	u = gotByBk
-	u.CountryId = 12
+	u.CountryId = 121
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -142,7 +142,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	// Update By Primary Keys
 	// AddressId
 	u = gotByPk
-	u.AddressId = 99
+	u.AddressId = 67
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -155,7 +155,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	// Update By Business Keys
 	// AddressId
 	u = gotByBk
-	u.AddressId = 248
+	u.AddressId = 114
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -169,49 +169,6 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	require.NoError(t, err)
 	gotAfterDelete := AddressBook{}
 	err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_addresses_book.RawId)
-	require.Error(t, err)
-}
-
-func TestGoSQLGen_Admin(t *testing.T) {
-	ctx := t.Context()
-	var err error
-
-	// Inserts
-	tbl_users := User{}
-	err = tbl_users.insert(ctx, testDb)
-	require.NoError(t, err)
-
-	tbl_admins := Admin{RawId: tbl_users.RawId}
-	err = tbl_admins.insert(ctx, testDb)
-	require.NoError(t, err)
-
-	// Get By Primary Keys
-	gotByPk := Admin{}
-	err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_admins.RawId)
-	require.NoError(t, err)
-	assert.Equal(t, tbl_admins, gotByPk)
-
-	var gotAfterUpdate Admin
-	var u Admin
-
-	// Update By Primary Keys
-	// Name
-	u = gotByPk
-	u.Name = "5ULZ56QQD4W2NRNTHJSGGC5MJO"
-	err = u.updateByPrimaryKeys(ctx, testDb)
-	require.NoError(t, err)
-
-	gotAfterUpdate = Admin{}
-	err = gotAfterUpdate.getByPrimaryKeys(ctx, testDb, tbl_admins.RawId)
-	require.NoError(t, err)
-
-	assert.Equal(t, u.Name, gotAfterUpdate.Name)
-
-	// Delete
-	err = gotByPk.delete(ctx, testDb)
-	require.NoError(t, err)
-	gotAfterDelete := Admin{}
-	err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_admins.RawId)
 	require.Error(t, err)
 }
 
@@ -243,7 +200,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 	// Update By Primary Keys
 	// Name
 	u = gotByPk
-	u.Name = "456NJS3WIDIBZUJRPVXGBTCPL7"
+	u.Name = "6WR4HEQXXM2DXDWLYIK3JGAZ4M"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -255,7 +212,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 
 	// GPS
 	u = gotByPk
-	u.GPS = "RYJZSPD5EWJNS4M3POO3EPQ2DB"
+	u.GPS = "HRKWHL3RDWC4INOVS5W5BL2YKR"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -265,10 +222,22 @@ func TestGoSQLGen_Country(t *testing.T) {
 
 	assert.Equal(t, u.GPS, gotAfterUpdate.GPS)
 
+	// Continent
+	u = gotByPk
+	u.Continent = "Europe"
+	err = u.updateByPrimaryKeys(ctx, testDb)
+	require.NoError(t, err)
+
+	gotAfterUpdate = Country{}
+	err = gotAfterUpdate.getByPrimaryKeys(ctx, testDb, tbl_countries.RawId)
+	require.NoError(t, err)
+
+	assert.Equal(t, u.Continent, gotAfterUpdate.Continent)
+
 	// Update By Business Keys
 	// Name
 	u = gotByBk
-	u.Name = "KKCG57SZDEO2BD4VGJSDLM4VGQ"
+	u.Name = "3ADOJFKPFFOBEPEUYKMUGCPIUM"
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -279,7 +248,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 
 	// GPS
 	u = gotByBk
-	u.GPS = "DV5BKYYFYV2GKOW4OFYERRGFCF"
+	u.GPS = "KS5K3B6SWCUYTTTDUQBY447WAR"
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -287,6 +256,17 @@ func TestGoSQLGen_Country(t *testing.T) {
 	err = gotAfterUpdate.getByPrimaryKeys(ctx, testDb, tbl_countries.RawId)
 	require.NoError(t, err)
 	assert.Equal(t, u.GPS, gotAfterUpdate.GPS)
+
+	// Continent
+	u = gotByBk
+	u.Continent = "Europe"
+	err = u.updateByBusinessKeys(ctx, testDb)
+	require.NoError(t, err)
+
+	gotAfterUpdate = Country{}
+	err = gotAfterUpdate.getByPrimaryKeys(ctx, testDb, tbl_countries.RawId)
+	require.NoError(t, err)
+	assert.Equal(t, u.Continent, gotAfterUpdate.Continent)
 
 	// Delete
 	err = gotByPk.delete(ctx, testDb)
@@ -324,7 +304,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	// Update By Primary Keys
 	// Name
 	u = gotByPk
-	u.Name = "EVGFZM7HY7WYQFLI65LZ325BYE"
+	u.Name = "RJZJVF4EQX5X5QGJJOTLL6HGIW"
 	err = u.updateByPrimaryKeys(ctx, testDb)
 	require.NoError(t, err)
 
@@ -337,7 +317,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	// Update By Business Keys
 	// Name
 	u = gotByBk
-	u.Name = "PIWGJDAZSWGX2DLFDZUTY2ARTF"
+	u.Name = "ZCS7O6BMSVTXIVDE6IBM734BOF"
 	err = u.updateByBusinessKeys(ctx, testDb)
 	require.NoError(t, err)
 
