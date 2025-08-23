@@ -55,12 +55,27 @@ func (d DBModel) Debug() {
 	}
 }
 
+// FKTableAndColumn parses the table name and the column name
+// from the fk tag specification in format "table.column"
+// Returns error if there are not exactly two dot separated fields separated
 func (c *Column) FKTableAndColumn() (string, string, error) {
 	m := strings.Split(c.fk, ".")
 	if len(m) != 2 {
 		return "", "", fmt.Errorf("Invalid FK format %s", c.fk)
 	}
-	return m[0], m[1], nil
+
+	table := strings.TrimSpace(m[0])
+	column := strings.TrimSpace(m[1])
+
+	if table == "" {
+		return "", "", fmt.Errorf("Invalid FK format %s. Table empty", c.fk)
+	}
+
+	if column == "" {
+		return "", "", fmt.Errorf("Invalid FK format %s. Column empty", c.fk)
+	}
+
+	return table, column, nil
 }
 
 func ExtractTagContent(tagName, input string) (string, error) {
