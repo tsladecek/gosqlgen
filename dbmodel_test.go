@@ -38,3 +38,32 @@ func TestFKTableAndColumn(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractTagContent(t *testing.T) {
+	cases := []struct {
+		name      string
+		tagName   string
+		input     string
+		output    string
+		shouldErr bool
+	}{
+		{name: "valid", tagName: "tag", input: `tag:"input"`, output: "input", shouldErr: false},
+		{name: "invalid - missing tag prefix in input", tagName: "tag", input: `:"input"`, shouldErr: true},
+		{name: "invalid - missing colon", tagName: "tag", input: `tag"input"`, shouldErr: true},
+		{name: "invalid - double quote not exactly after colon", tagName: "tag", input: `tag:tag"input"`, shouldErr: true},
+		{name: "invalid - missing start quote", tagName: "tag", input: `tag:input"`, shouldErr: true},
+		{name: "invalid - missing end quote", tagName: "tag", input: `tag:"input`, shouldErr: true},
+		{name: "valid - output should be space trimmed", tagName: "tag", input: `tag:"  input "`, output: "input", shouldErr: false},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := ExtractTagContent(tt.tagName, tt.input)
+			require.Equal(t, tt.shouldErr, err != nil)
+
+			if !tt.shouldErr {
+				assert.Equal(t, tt.output, c)
+			}
+		})
+	}
+}

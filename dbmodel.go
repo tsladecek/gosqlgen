@@ -78,6 +78,8 @@ func (c *Column) FKTableAndColumn() (string, string, error) {
 	return table, column, nil
 }
 
+// ExtractTagContent extracts the content of a given tagName enclosed
+// within double quotes
 func ExtractTagContent(tagName, input string) (string, error) {
 	prefix := fmt.Sprintf(`%s:"`, tagName)
 	suffix := `"`
@@ -94,7 +96,7 @@ func ExtractTagContent(tagName, input string) (string, error) {
 		return "", fmt.Errorf("closing quote '%s' not found after prefix", suffix)
 	}
 
-	return input[startIndex : startIndex+endIndex], nil
+	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
 }
 
 func NewColumn(tag string) (*Column, error) {
