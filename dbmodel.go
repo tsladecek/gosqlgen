@@ -99,25 +99,28 @@ func ExtractTagContent(tagName, input string) (string, error) {
 	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
 }
 
+// NewColumn constructs Column from a tag. Foreign keys are stored
+// in a temporary private field "fk". All relationships are reconcilled
+// after all tables have been parsed
 func NewColumn(tag string) (*Column, error) {
 	tag, err := ExtractTagContent(TagPrefix, tag)
 
 	if err != nil {
-		return nil, fmt.Errorf("Invalid tag: %w", err)
+		return nil, fmt.Errorf("invalid tag: %w", err)
 	}
 
 	if tag == "" {
-		return nil, nil
+		return nil, fmt.Errorf("empty tag")
 	}
 	items := strings.Split(tag, ";")
 
 	if len(items) < 2 {
-		return nil, fmt.Errorf("Invalid tag %s. Must have two required fields: name,sql type (e.g. name,varchar(31))", tag)
+		return nil, fmt.Errorf("tag (%s) must have two required fields: name,sql type (e.g. name,varchar(31))", tag)
 	}
 
 	c := &Column{}
-	c.Name = items[0]
-	c.SQLType = items[1]
+	c.Name = strings.TrimSpace(items[0])
+	c.SQLType = strings.TrimSpace(items[1])
 
 	if len(items) == 2 {
 		return c, nil

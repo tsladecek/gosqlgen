@@ -1,6 +1,7 @@
 package gosqlgen
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,35 @@ func TestExtractTagContent(t *testing.T) {
 
 			if !tt.shouldErr {
 				assert.Equal(t, tt.output, c)
+			}
+		})
+	}
+}
+
+func TestNewColumn(t *testing.T) {
+	cases := []struct {
+		name           string
+		tag            string
+		shouldErr      bool
+		expectedColumn Column
+	}{
+		{name: "invalid - empty tag", tag: fmt.Sprintf(`%s:""`, TagPrefix), shouldErr: true},
+		{name: "invalid - tag missing sql type", tag: fmt.Sprintf(`%s:"col"`, TagPrefix), shouldErr: true},
+		{name: "invalid - tag parsing", tag: fmt.Sprintf(`%s:col`, TagPrefix), shouldErr: true},
+		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table col;bk;sd"`, TagPrefix), shouldErr: true},
+		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk;bk;sd"`, TagPrefix), shouldErr: true},
+		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table.col;bk;sd"`, TagPrefix), shouldErr: false, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, SQLType: "int", fk: "table.col"}},
+		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;  int   ;    pk ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), shouldErr: false, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, SQLType: "int", fk: "table.col"}},
+		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;int;pk"`, TagPrefix), shouldErr: false, expectedColumn: Column{Name: "column", SQLType: "int", PrimaryKey: true}},
+		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;int;bad"`, TagPrefix), shouldErr: false, expectedColumn: Column{Name: "column", SQLType: "int"}},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewColumn(tt.tag)
+			require.Equal(t, tt.shouldErr, err != nil)
+			if !tt.shouldErr {
+				assert.Equal(t, tt.expectedColumn, *c)
 			}
 		})
 	}
