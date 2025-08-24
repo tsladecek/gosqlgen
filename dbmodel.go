@@ -39,8 +39,6 @@ type DBModel struct {
 }
 
 var (
-	ErrNoTableTag = errors.New("table tag not found")
-
 	ErrFKFieldNumber = errors.New("expected two dot separated fields; expected format: table.column")
 	ErrFKTableEmpty  = errors.New("no table specified; expected format: table.column")
 	ErrFKColumnEmpty = errors.New("no column specified; expected format: table.column")
@@ -53,6 +51,9 @@ var (
 	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
 
 	ErrColumnNotFound = errors.New("column not found")
+
+	ErrEmptyTablename = errors.New("tag found in comment group but table name is empty")
+	ErrNoTableTag     = errors.New("table tag not found")
 )
 
 func (d DBModel) Debug() {
@@ -123,7 +124,7 @@ func NewColumn(tag string) (*Column, error) {
 	tag, err := ExtractTagContent(TagPrefix, tag)
 
 	if err != nil {
-		return nil, fmt.Errorf("invalid tag: %w", err)
+		return nil, fmt.Errorf("invalid tag %s: %w", tag, err)
 	}
 
 	if tag == "" {
@@ -178,15 +179,21 @@ func (t *Table) GetColumn(columnName string) (*Column, error) {
 	return nil, ErrColumnNotFound
 }
 
+// ParseTableName expects to find a table annotation in one of struct type
+// comment lines. The annotation should be in format: gosqlgen: table_name[;flags]
+// The comment must be on a single line. It is expected that the code is properly
+// formatted with gofmt
 func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
-	stripPrefix := fmt.Sprintf("// %s: ", TagPrefix)
+	stripPrefix := fmt.Sprintf("// %s:", TagPrefix)
 	if cgroup != nil {
 		for _, c := range cgroup.List {
 			if after, ok := strings.CutPrefix(c.Text, stripPrefix); ok {
-				items := strings.Split(after, ";")
-				if len(items) == 0 {
-					return fmt.Errorf("Table name must not be empty")
+				after := strings.TrimSpace(after)
+				if after == "" {
+					return ErrEmptyTablename
 				}
+
+				items := strings.Split(after, ";")
 
 				t.Name = strings.TrimSpace(items[0])
 

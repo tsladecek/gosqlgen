@@ -2,6 +2,7 @@ package gosqlgen
 
 import (
 	"fmt"
+	"go/ast"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -129,6 +130,44 @@ func TestGetColumn(t *testing.T) {
 				assert.Equal(t, tt.expectedCol, c)
 			} else {
 				assert.ErrorIs(t, err, ErrColumnNotFound)
+			}
+		})
+	}
+}
+
+func TestParseTableName(t *testing.T) {
+	cases := []struct {
+		name          string
+		expectedErr   error
+		expectedTable Table
+		comments      []string
+	}{
+		{name: "invalid no annotation found", comments: []string{"// comment line 1", "// comment line 2"}, expectedErr: ErrNoTableTag},
+		{name: "invalid empty table name", comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:", TagPrefix)}, expectedErr: ErrEmptyTablename},
+		{name: "invalid empty table name of spaces", comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:   ", TagPrefix)}, expectedErr: ErrEmptyTablename},
+		{name: "valid", expectedTable: Table{Name: "table", SkipTests: false}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table", TagPrefix)}},
+		{name: "valid with spaces trimmed", expectedTable: Table{Name: "table", SkipTests: false}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:   table  ", TagPrefix)}},
+		{name: "valid with unknown flags", expectedTable: Table{Name: "table", SkipTests: false}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table;unkown;flags", TagPrefix)}},
+		{name: "valid with skip tests flag", expectedTable: Table{Name: "table", SkipTests: true}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table;    skip tests  ", TagPrefix)}},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			comments := make([]*ast.Comment, len(tt.comments))
+			for i, c := range tt.comments {
+				comments[i] = &ast.Comment{Text: c}
+			}
+			cg := &ast.CommentGroup{List: comments}
+
+			tab := Table{}
+			err := tab.ParseTableName(cg)
+
+			require.Equal(t, tt.expectedErr == nil, err == nil)
+
+			if tt.expectedErr == nil {
+				assert.Equal(t, tt.expectedTable, tab)
+			} else {
+				assert.ErrorIs(t, err, tt.expectedErr)
 			}
 		})
 	}
