@@ -38,6 +38,21 @@ type DBModel struct {
 	PackageName string
 }
 
+var (
+	ErrNoTableTag = errors.New("table tag not found")
+
+	ErrFKFieldNumber = errors.New("expected two dot separated fields; expected format: table.column")
+	ErrFKTableEmpty  = errors.New("no table specified; expected format: table.column")
+	ErrFKColumnEmpty = errors.New("no column specified; expected format: table.column")
+
+	ErrInvalidTagPrefix = errors.New("tag prefix not valid")
+	ErrNoClosingQuote   = errors.New("tag not closed with quote")
+
+	ErrEmptyTag          = errors.New("tag empty")
+	ErrTagFieldNumber    = errors.New("tag must have two required fields: column name and sql type (e.g. name,varchar(31))")
+	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
+)
+
 func (d DBModel) Debug() {
 	fmt.Println("---DBModel Debug---")
 	fmt.Printf("--PackageName: %s--\n", d.PackageName)
@@ -61,18 +76,18 @@ func (d DBModel) Debug() {
 func (c *Column) FKTableAndColumn() (string, string, error) {
 	m := strings.Split(c.fk, ".")
 	if len(m) != 2 {
-		return "", "", fmt.Errorf("Invalid FK format %s", c.fk)
+		return "", "", ErrFKFieldNumber
 	}
 
 	table := strings.TrimSpace(m[0])
 	column := strings.TrimSpace(m[1])
 
 	if table == "" {
-		return "", "", fmt.Errorf("Invalid FK format %s. Table empty", c.fk)
+		return "", "", ErrFKTableEmpty
 	}
 
 	if column == "" {
-		return "", "", fmt.Errorf("Invalid FK format %s. Column empty", c.fk)
+		return "", "", ErrFKColumnEmpty
 	}
 
 	return table, column, nil
@@ -86,14 +101,14 @@ func ExtractTagContent(tagName, input string) (string, error) {
 
 	startIndex := strings.Index(input, prefix)
 	if startIndex == -1 {
-		return "", fmt.Errorf("prefix '%s' not found", prefix)
+		return "", ErrInvalidTagPrefix
 	}
 
 	startIndex += len(prefix)
 
 	endIndex := strings.Index(input[startIndex:], suffix)
 	if endIndex == -1 {
-		return "", fmt.Errorf("closing quote '%s' not found after prefix", suffix)
+		return "", ErrNoClosingQuote
 	}
 
 	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
@@ -110,12 +125,12 @@ func NewColumn(tag string) (*Column, error) {
 	}
 
 	if tag == "" {
-		return nil, fmt.Errorf("empty tag")
+		return nil, ErrEmptyTag
 	}
 	items := strings.Split(tag, ";")
 
 	if len(items) < 2 {
-		return nil, fmt.Errorf("tag (%s) must have two required fields: name,sql type (e.g. name,varchar(31))", tag)
+		return nil, ErrTagFieldNumber
 	}
 
 	c := &Column{}
@@ -136,7 +151,7 @@ func NewColumn(tag string) (*Column, error) {
 		} else if strings.HasPrefix(m, "fk") {
 			fkFields := strings.Split(m, " ")
 			if len(fkFields) != 2 {
-				return nil, errors.New("Invalid Foreign key spec. Must be in format: fk table.column")
+				return nil, ErrFKSpecFieldNumber
 			}
 			c.fk = fkFields[1]
 		} else if m == "sd" {
@@ -157,8 +172,6 @@ func (t *Table) GetColumn(columnName string) (*Column, error) {
 
 	return nil, fmt.Errorf("Column %s not found", columnName)
 }
-
-var ErrNoTableTag = errors.New("Table tag not found")
 
 func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 	stripPrefix := fmt.Sprintf("// %s: ", TagPrefix)
@@ -201,7 +214,7 @@ func (d *DBModel) ReconcileRelationships() error {
 				table, column, err := c.FKTableAndColumn()
 
 				if err != nil {
-					return err
+					return fmt.Errorf("invalid foreign key format %s: %w", c.fk, err)
 				}
 
 				tt, ok := tmap[table]
