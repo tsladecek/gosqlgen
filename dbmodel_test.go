@@ -104,3 +104,32 @@ func TestNewColumn(t *testing.T) {
 		})
 	}
 }
+
+func TestGetColumn(t *testing.T) {
+	col1 := &Column{Name: "col1"}
+	col2 := &Column{Name: "col2"}
+	cases := []struct {
+		name        string
+		expectedErr error
+		table       *Table
+		columnName  string
+		expectedCol *Column
+	}{
+		{name: "valid - col1 found", table: &Table{Columns: []*Column{col1, col2}}, columnName: "col1", expectedCol: col1},
+		{name: "valid - col2 found", table: &Table{Columns: []*Column{col1, col2}}, columnName: "col2", expectedCol: col2},
+		{name: "invalid - col3 not found", table: &Table{Columns: []*Column{col1, col2}}, columnName: "col3", expectedErr: ErrColumnNotFound},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := tt.table.GetColumn(tt.columnName)
+			require.Equal(t, tt.expectedErr == nil, err == nil)
+
+			if tt.expectedErr == nil {
+				assert.Equal(t, tt.expectedCol, c)
+			} else {
+				assert.ErrorIs(t, err, ErrColumnNotFound)
+			}
+		})
+	}
+}

@@ -51,6 +51,8 @@ var (
 	ErrEmptyTag          = errors.New("tag empty")
 	ErrTagFieldNumber    = errors.New("tag must have two required fields: column name and sql type (e.g. name,varchar(31))")
 	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
+
+	ErrColumnNotFound = errors.New("column not found")
 )
 
 func (d DBModel) Debug() {
@@ -163,6 +165,9 @@ func NewColumn(tag string) (*Column, error) {
 	return c, nil
 }
 
+// GetColumn loops over columns in the table and returns
+// the one with matching column name. In case that no is found,
+// an error is returned
 func (t *Table) GetColumn(columnName string) (*Column, error) {
 	for _, c := range t.Columns {
 		if c.Name == columnName {
@@ -170,7 +175,7 @@ func (t *Table) GetColumn(columnName string) (*Column, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Column %s not found", columnName)
+	return nil, ErrColumnNotFound
 }
 
 func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
