@@ -3,6 +3,10 @@ package gosqlgen
 import (
 	"fmt"
 	"go/ast"
+	"go/format"
+	"go/parser"
+	"go/token"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -226,5 +230,54 @@ func TestReconcileRelationships(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorIs(t, err, ErrColumnNotFound)
 	})
+}
 
+func TestNewDBModel(t *testing.T) {
+	content, err := format.Source([]byte(strings.Join([]string{
+		"package main",
+		"import \"database/sql\"",
+		"// gosqlgen: table1; skip tests",
+		"type Table1 struct {",
+		"id int `gosqlgen:\"id; int; pk ai\"`",
+		"name string `gosqlgen:\"name; varchar(255); bk\"`",
+		"deleted_at sql.NullTime `gosqlgen:\"deleted_at; datetime; sd\"`",
+		"}",
+		"// gosqlgen: table2",
+		"type Table2 struct {",
+		"id int `gosqlgen:\"id; int; pk ai\"`",
+		"table1Id int `gosqlgen:\"table1_id; int;fk table1.id\"`",
+		"}",
+	}, "\n")))
+	require.NoError(t, err)
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "", content, parser.ParseComments)
+	require.NoError(t, err)
+
+	dbModel, err := NewDBModel(f)
+	require.NoError(t, err)
+
+	require.NotNil(t, dbModel)
+	assert.Len(t, dbModel.Tables, 2)
+
+	// this check can be done since the tables are sorted by name
+	t1 := dbModel.Tables[0]
+	t2 := dbModel.Tables[1]
+
+	assert.Equal(t, "table1", t1.Name)
+	assert.True(t, t1.SkipTests)
+	assert.Len(t, t1.Columns, 3)
+
+	// Table: table1, Column: id
+	id, err := t1.GetColumn("id")
+	require.NoError(t, err)
+	require.NotNil(t, id)
+
+	// is there a better way to deal with the type?
+	assert.Equal(t, Column{Name: "id", FieldName: "id", PrimaryKey: true, Type: id.Type, AutoIncrement: true, SQLType: "int", Table: t1}, *id)
+	ts, err := id.TypeString()
+	require.NoError(t, err)
+	assert.Equal(t, "int", ts)
+
+	assert.Equal(t, "table2", t2.Name)
+	assert.False(t, t2.SkipTests)
 }

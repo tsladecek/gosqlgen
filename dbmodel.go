@@ -283,6 +283,10 @@ MainLoop:
 
 			if x.Fields != nil {
 				for _, fff := range x.Fields.List {
+					if fff.Tag == nil {
+						return nil, fmt.Errorf("tag empty")
+					}
+
 					column, err := NewColumn(fff.Tag.Value)
 					if err != nil {
 						return nil, fmt.Errorf("Failed to parse column from tag %s: %w", fff.Tag.Value, err)
