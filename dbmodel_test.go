@@ -172,3 +172,59 @@ func TestParseTableName(t *testing.T) {
 		})
 	}
 }
+
+func TestReconcileRelationships(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		column1 := &Column{Name: "col1"}
+		table1 := &Table{Name: "table1", Columns: []*Column{column1}}
+
+		column2 := &Column{Name: "col2", fk: "table1.col1"}
+		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
+
+		dbModel := DBModel{Tables: []*Table{table1, table2}}
+		err := dbModel.ReconcileRelationships()
+		require.NoError(t, err)
+		require.NotNil(t, column2.ForeignKey)
+		assert.Equal(t, column1, column2.ForeignKey)
+	})
+
+	t.Run("invalid - FKTableAndColumn parsing", func(t *testing.T) {
+		column1 := &Column{Name: "col1"}
+		table1 := &Table{Name: "table1", Columns: []*Column{column1}}
+
+		column2 := &Column{Name: "col2", fk: ".col1"}
+		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
+
+		dbModel := DBModel{Tables: []*Table{table1, table2}}
+		err := dbModel.ReconcileRelationships()
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrFKTableEmpty)
+	})
+
+	t.Run("invalid - table not in db model", func(t *testing.T) {
+		column1 := &Column{Name: "col1"}
+		table1 := &Table{Name: "table1", Columns: []*Column{column1}}
+
+		column2 := &Column{Name: "col2", fk: "table3.col1"}
+		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
+
+		dbModel := DBModel{Tables: []*Table{table1, table2}}
+		err := dbModel.ReconcileRelationships()
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrFKTableNotFoundInModel)
+	})
+
+	t.Run("invalid - column not found in referenced table", func(t *testing.T) {
+		column1 := &Column{Name: "col1"}
+		table1 := &Table{Name: "table1", Columns: []*Column{column1}}
+
+		column2 := &Column{Name: "col2", fk: "table1.col4"}
+		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
+
+		dbModel := DBModel{Tables: []*Table{table1, table2}}
+		err := dbModel.ReconcileRelationships()
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrColumnNotFound)
+	})
+
+}

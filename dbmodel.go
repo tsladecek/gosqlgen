@@ -54,6 +54,8 @@ var (
 
 	ErrEmptyTablename = errors.New("tag found in comment group but table name is empty")
 	ErrNoTableTag     = errors.New("table tag not found")
+
+	ErrFKTableNotFoundInModel = errors.New("table not found in spec when forming foreign key constraints")
 )
 
 func (d DBModel) Debug() {
@@ -124,7 +126,7 @@ func NewColumn(tag string) (*Column, error) {
 	tag, err := ExtractTagContent(TagPrefix, tag)
 
 	if err != nil {
-		return nil, fmt.Errorf("invalid tag %s: %w", tag, err)
+		return nil, fmt.Errorf("%w: tag=%s", err, tag)
 	}
 
 	if tag == "" {
@@ -226,17 +228,17 @@ func (d *DBModel) ReconcileRelationships() error {
 				table, column, err := c.FKTableAndColumn()
 
 				if err != nil {
-					return fmt.Errorf("invalid foreign key format %s: %w", c.fk, err)
+					return fmt.Errorf("%w: fk=%s", err, c.fk)
 				}
 
 				tt, ok := tmap[table]
 				if !ok {
-					return fmt.Errorf("Table %s not found in spec", table)
+					return fmt.Errorf("%w: table=%s", ErrFKTableNotFoundInModel, table)
 				}
 
 				col, err := tt.GetColumn(column)
 				if err != nil {
-					return fmt.Errorf("Column %s not found in table %s", column, table)
+					return fmt.Errorf("%w: column=%s, table=%s", err, column, table)
 				}
 
 				c.ForeignKey = col
