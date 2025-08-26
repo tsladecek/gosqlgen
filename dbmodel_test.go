@@ -325,5 +325,57 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, table1Id)
 	columnCompare(true, "", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, SQLType: "int", Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
+}
 
+func TestNewDBModel_SadPath(t *testing.T) {
+	cases := []struct {
+		name          string
+		content       string
+		expectedError error
+	}{
+		{name: "table name parsing", content: strings.Join([]string{
+			"package main",
+			"// gosqlgen: ",
+			"type Table1 struct {",
+			"Id int `gosqlgen:\"id; int; pk ai\"`",
+			"}"}, "\n"),
+			expectedError: ErrEmptyTablename},
+		{name: "valid struct with no table annotation should be skipped", content: strings.Join([]string{
+			"package main",
+			"type Table1 struct {",
+			"Id int `gosqlgen:\"id; int; pk ai\"`",
+			"}"}, "\n"),
+			expectedError: nil},
+		{name: "no tag found for column", content: strings.Join([]string{
+			"package main",
+			"// gosqlgen: table",
+			"type Table1 struct {",
+			"Id int",
+			"}"}, "\n"),
+			expectedError: ErrNoColumnTag},
+
+		{name: "column constructor error", content: strings.Join([]string{
+			"package main",
+			"// gosqlgen: table",
+			"type Table1 struct {",
+			"Id int `gosqlgen:\"id\"`",
+			"}"}, "\n"),
+			expectedError: ErrTagFieldNumber},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			f, err := parser.ParseFile(fset, "", tt.content, parser.ParseComments)
+			require.NoError(t, err)
+			_, err = NewDBModel(fset, f)
+
+			if tt.expectedError != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

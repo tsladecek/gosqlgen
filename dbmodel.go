@@ -58,6 +58,10 @@ var (
 	ErrNoTableTag     = errors.New("table tag not found")
 
 	ErrFKTableNotFoundInModel = errors.New("table not found in spec when forming foreign key constraints")
+
+	ErrNoColumnTag = errors.New("no column tag found")
+
+	ErrNoPrimaryKey = errors.New("no primary key found for table")
 )
 
 func (d DBModel) Debug() {
@@ -218,6 +222,10 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 	return ErrNoTableTag
 }
 
+// ReconcileRelationships loops over every parsed column in
+// every table and checks if the column should be a foreign key,
+// in which case it finds corresponding referenced *Column and
+// stores the pointer in the ForeignKey field
 func (d *DBModel) ReconcileRelationships() error {
 	tmap := make(map[string]*Table, len(d.Tables))
 	for _, t := range d.Tables {
@@ -250,11 +258,15 @@ func (d *DBModel) ReconcileRelationships() error {
 	return nil
 }
 
+// NewDBModel parses the File and constructs the entire DBModel.
+// In the first pass, all tables and columns are constructed. In the
+// second, the relationships are reconcilled and finally the tables are
+// sorted by their (database) name
 func NewDBModel(fset *token.FileSet, f *ast.File) (*DBModel, error) {
 	info := types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}
 	var conf types.Config
 	conf.Importer = importer.Default()
-	_, err := conf.Check("fib", fset, []*ast.File{f}, &info)
+	_, err := conf.Check("", fset, []*ast.File{f}, &info)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +295,7 @@ MainLoop:
 
 			err := table.ParseTableName(genDecl.Doc)
 			if errors.Is(err, ErrNoTableTag) {
-				fmt.Printf("Skipped struct %s, no parseable table definition found. If this is an error, please add it in the comment above the type", table.StructName)
+				fmt.Printf("Skipped struct %s, no parseable table definition found. If this is an error, please add it in the comment above the type\n", table.StructName)
 				continue MainLoop
 			}
 
@@ -294,12 +306,12 @@ MainLoop:
 			if x.Fields != nil {
 				for _, fff := range x.Fields.List {
 					if fff.Tag == nil {
-						return nil, fmt.Errorf("tag empty")
+						return nil, fmt.Errorf("%w: table=%s", ErrNoColumnTag, table.Name)
 					}
 
 					column, err := NewColumn(fff.Tag.Value)
 					if err != nil {
-						return nil, fmt.Errorf("Failed to parse column from tag %s: %w", fff.Tag.Value, err)
+						return nil, fmt.Errorf("%w: table=%s", err, table.Name)
 					}
 					column.Table = &table
 					column.Type = info.TypeOf(fff.Type)
@@ -337,7 +349,7 @@ func (t *Table) PkAndBk() ([]*Column, []*Column, error) {
 	}
 
 	if len(pk) == 0 {
-		return nil, nil, fmt.Errorf("Table %s (%s) has no primary key", t.Name, t.StructName)
+		return nil, nil, ErrNoPrimaryKey
 	}
 
 	return pk, bk, nil
