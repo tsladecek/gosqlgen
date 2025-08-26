@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"strings"
 	"testing"
 
@@ -232,20 +233,20 @@ func TestReconcileRelationships(t *testing.T) {
 	})
 }
 
-func TestNewDBModel(t *testing.T) {
+func TestNewDBModel_HappyPath(t *testing.T) {
 	content, err := format.Source([]byte(strings.Join([]string{
 		"package main",
 		"import \"database/sql\"",
 		"// gosqlgen: table1; skip tests",
 		"type Table1 struct {",
-		"id int `gosqlgen:\"id; int; pk ai\"`",
-		"name string `gosqlgen:\"name; varchar(255); bk\"`",
+		"Id int `gosqlgen:\"id; int; pk ai\"`",
+		"Name string `gosqlgen:\"name; varchar(255); bk\"`",
 		"deleted_at sql.NullTime `gosqlgen:\"deleted_at; datetime; sd\"`",
 		"}",
 		"// gosqlgen: table2",
 		"type Table2 struct {",
-		"id int `gosqlgen:\"id; int; pk ai\"`",
-		"table1Id int `gosqlgen:\"table1_id; int;fk table1.id\"`",
+		"Id int `gosqlgen:\"id; int; pk ai\"`",
+		"Table1Id int `gosqlgen:\"table1_id; int;fk table1.id\"`",
 		"}",
 	}, "\n")))
 	require.NoError(t, err)
@@ -253,13 +254,13 @@ func TestNewDBModel(t *testing.T) {
 	f, err := parser.ParseFile(fset, "", content, parser.ParseComments)
 	require.NoError(t, err)
 
-	dbModel, err := NewDBModel(f)
+	dbModel, err := NewDBModel(fset, f)
 	require.NoError(t, err)
 
 	require.NotNil(t, dbModel)
 	assert.Len(t, dbModel.Tables, 2)
 
-	// this check can be done since the tables are sorted by name
+	// tables are sorted by name
 	t1 := dbModel.Tables[0]
 	t2 := dbModel.Tables[1]
 
@@ -267,17 +268,62 @@ func TestNewDBModel(t *testing.T) {
 	assert.True(t, t1.SkipTests)
 	assert.Len(t, t1.Columns, 3)
 
+	columnCompare := func(same bool, typeString string, expected, tested Column) {
+		compFunc := assert.Equal
+		if !same {
+			compFunc = assert.NotEqual
+		}
+
+		if typeString == "" {
+			compFunc(t, expected, tested)
+			return
+		}
+
+		compFunc(t, expected.Name, tested.Name)
+		compFunc(t, expected.FieldName, tested.FieldName)
+		compFunc(t, expected.PrimaryKey, tested.PrimaryKey)
+		compFunc(t, expected.ForeignKey, tested.ForeignKey)
+		compFunc(t, expected.Table, tested.Table)
+		compFunc(t, typeString, tested.Type.String())
+		compFunc(t, expected.SoftDelete, tested.SoftDelete)
+		compFunc(t, expected.BusinessKey, tested.BusinessKey)
+		compFunc(t, expected.AutoIncrement, tested.AutoIncrement)
+		compFunc(t, expected.SQLType, tested.SQLType)
+
+	}
+
 	// Table: table1, Column: id
 	id, err := t1.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id)
+	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, SQLType: "int", Table: t1, Type: types.Typ[types.Int]}, *id)
 
-	// is there a better way to deal with the type?
-	assert.Equal(t, Column{Name: "id", FieldName: "id", PrimaryKey: true, Type: id.Type, AutoIncrement: true, SQLType: "int", Table: t1}, *id)
-	ts, err := id.TypeString()
+	// Table: table1, Column: name
+	name, err := t1.GetColumn("name")
 	require.NoError(t, err)
-	assert.Equal(t, "int", ts)
+	require.NotNil(t, name)
+	columnCompare(true, "", Column{Name: "name", FieldName: "Name", BusinessKey: true, SQLType: "varchar(255)", Table: t1, Type: types.Typ[types.String]}, *name)
+
+	// Table: table1, Column: name
+	deletedAt, err := t1.GetColumn("deleted_at")
+	require.NoError(t, err)
+	require.NotNil(t, deletedAt)
+
+	assert.Equal(t, "database/sql.NullTime", deletedAt.Type.String())
+	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SQLType: "datetime", SoftDelete: true, Table: t1}, *deletedAt)
 
 	assert.Equal(t, "table2", t2.Name)
 	assert.False(t, t2.SkipTests)
+
+	// Table: table2, Column: id
+	id2, err := t2.GetColumn("id")
+	require.NoError(t, err)
+	require.NotNil(t, id2)
+	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, SQLType: "int", Table: t2, Type: types.Typ[types.Int]}, *id2)
+
+	table1Id, err := t2.GetColumn("table1_id")
+	require.NoError(t, err)
+	require.NotNil(t, table1Id)
+	columnCompare(true, "", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, SQLType: "int", Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
+
 }

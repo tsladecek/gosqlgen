@@ -3,7 +3,6 @@ package gosqldrivermysql
 import (
 	crand "crypto/rand"
 	"fmt"
-	"go/ast"
 	"io"
 	"math/rand"
 	"slices"
@@ -122,15 +121,10 @@ func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column,
 		scanColumns[i] = fmt.Sprintf("&%s.%s", objName, c.FieldName)
 
 		if c.SoftDelete {
-			cType, err := c.TypeString()
-			if err != nil {
-				return fmt.Errorf("can not construct statement due to bad soft delete column type: %w", err)
-			}
-
-			switch cType {
+			switch c.Type.String() {
 			case "bool":
 				queryCond = append(queryCond, fmt.Sprintf("%s = true", c.Name))
-			case "sql.NullTime":
+			case "database/sql.NullTime":
 				queryCond = append(queryCond, fmt.Sprintf("%s IS NOT NULL", c.Name))
 			case "string":
 				queryCond = append(queryCond, fmt.Sprintf(`%s = ?`, c.Name))
@@ -190,16 +184,11 @@ func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) er
 	data["AIColumnType"] = "int"
 
 	if aiCol != nil {
-		ai, ok := aiCol.Type.(*ast.Ident)
-		if !ok {
-			return fmt.Errorf("Autoincrement column %s not a basic type. Must be one of following types: int, int16, int32, int64", aiCol.Name)
-		}
-
-		if !slices.Contains([]string{"int", "int16", "int32", "int64"}, ai.Name) {
+		if !slices.Contains([]string{"int", "int8", "int16", "int32", "int64"}, aiCol.Type.String()) {
 			return fmt.Errorf("Autoincrement column %s must be one of following types: int, int16, int32, int64", aiCol.Name)
 		}
 
-		data["AIColumnType"] = ai.Name
+		data["AIColumnType"] = aiCol.Type.String()
 	}
 
 	d.insertTemplate.Execute(w, data)
@@ -277,16 +266,11 @@ func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 	columnPlaceholders := []string{}
 
 	for _, col := range softCols {
-		cType, err := col.TypeString()
-		if err != nil {
-			return fmt.Errorf("can not construct statement due to bad soft delete column type: %w", err)
-		}
-
-		switch cType {
+		switch col.Type.String() {
 		case "bool":
 			columnValues = append(columnValues, "true")
 			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
-		case "sql.NullTime", "string", "time.Time":
+		case "database/sql.NullTime", "string", "time.Time":
 			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = CURRENT_TIMESTAMP", col.Name))
 		default:
 			return fmt.Errorf("Unsupported type for soft delete column %s.%s", col.Table.Name, col.Name)

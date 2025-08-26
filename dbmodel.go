@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/token"
+	"go/types"
 	"slices"
 	"strings"
 )
@@ -12,16 +14,16 @@ import (
 const TagPrefix = "gosqlgen"
 
 type Column struct {
-	Name          string   // name of the sql column
-	FieldName     string   // name of the field in the struct
-	PrimaryKey    bool     // is this a primary key column?
-	ForeignKey    *Column  // address of the reference column. nil if not FK
-	Table         *Table   // address of the table this Column belongs to
-	Type          ast.Expr // go type of the column in the struct
-	SoftDelete    bool     // does this column represent soft deletion (sd)
-	BusinessKey   bool     // is this business key (bk)
-	AutoIncrement bool     // is this auto incremented? Important for inserts, since this column must be fetched
-	SQLType       string   // this can be driver specific
+	Name          string     // name of the sql column
+	FieldName     string     // name of the field in the struct
+	PrimaryKey    bool       // is this a primary key column?
+	ForeignKey    *Column    // address of the reference column. nil if not FK
+	Table         *Table     // address of the table this Column belongs to
+	Type          types.Type // go type of the column in the struct
+	SoftDelete    bool       // does this column represent soft deletion (sd)
+	BusinessKey   bool       // is this business key (bk)
+	AutoIncrement bool       // is this auto incremented? Important for inserts, since this column must be fetched
+	SQLType       string     // this can be driver specific
 
 	fk string
 }
@@ -248,7 +250,15 @@ func (d *DBModel) ReconcileRelationships() error {
 	return nil
 }
 
-func NewDBModel(f *ast.File) (*DBModel, error) {
+func NewDBModel(fset *token.FileSet, f *ast.File) (*DBModel, error) {
+	info := types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}
+	var conf types.Config
+	conf.Importer = importer.Default()
+	_, err := conf.Check("fib", fset, []*ast.File{f}, &info)
+	if err != nil {
+		return nil, err
+	}
+
 	dbModel := DBModel{Tables: make([]*Table, 0), PackageName: f.Name.Name}
 MainLoop:
 	for _, decl := range f.Decls {
@@ -292,7 +302,7 @@ MainLoop:
 						return nil, fmt.Errorf("Failed to parse column from tag %s: %w", fff.Tag.Value, err)
 					}
 					column.Table = &table
-					column.Type = fff.Type
+					column.Type = info.TypeOf(fff.Type)
 					column.FieldName = fff.Names[0].Name
 					table.Columns = append(table.Columns, column)
 				}
@@ -302,7 +312,7 @@ MainLoop:
 		dbModel.Tables = append(dbModel.Tables, &table)
 	}
 
-	err := dbModel.ReconcileRelationships()
+	err = dbModel.ReconcileRelationships()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to reconcile relationships: %w", err)
 	}
@@ -331,18 +341,4 @@ func (t *Table) PkAndBk() ([]*Column, []*Column, error) {
 	}
 
 	return pk, bk, nil
-}
-
-func (c *Column) TypeString() (string, error) {
-	switch t := c.Type.(type) {
-	case *ast.Ident:
-		return t.Name, nil
-	case *ast.SelectorExpr:
-		pkg, ok := t.X.(*ast.Ident)
-		if !ok {
-			return "", fmt.Errorf("Failed to parse type for column %s in table %s", c.Name, c.Table.Name)
-		}
-		return fmt.Sprintf("%s.%s", pkg.Name, t.Sel.Name), nil
-	}
-	return "", nil
 }

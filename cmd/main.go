@@ -43,7 +43,7 @@ func main() {
 		panic(err)
 	}
 
-	dbModel, err := gosqlgen.NewDBModel(f)
+	dbModel, err := gosqlgen.NewDBModel(fset, f)
 	if err != nil {
 		panic(err)
 	}
