@@ -336,6 +336,8 @@ MainLoop:
 	return &dbModel, nil
 }
 
+// PkAndBk returns the primary key and business key columns
+// of the table. Error is returned only if no primary key was found
 func (t *Table) PkAndBk() ([]*Column, []*Column, error) {
 	pk := make([]*Column, 0)
 	bk := make([]*Column, 0)

@@ -379,3 +379,91 @@ func TestNewDBModel_SadPath(t *testing.T) {
 		})
 	}
 }
+
+func TestTablePkAndBk(t *testing.T) {
+	cases := []struct {
+		name          string
+		inputTable    *Table
+		expectedPK    []*Column
+		expectedBK    []*Column
+		expectedError error
+	}{
+		{
+			name: "Table with Primary Key Only",
+			inputTable: &Table{
+				Columns: []*Column{
+					{Name: "id", PrimaryKey: true},
+					{Name: "name"},
+				},
+			},
+			expectedPK: []*Column{
+				{Name: "id", PrimaryKey: true},
+			},
+			expectedBK:    []*Column{},
+			expectedError: nil,
+		},
+		{
+			name: "Table with Primary and Business Keys",
+			inputTable: &Table{
+				Columns: []*Column{
+					{Name: "id", PrimaryKey: true},
+					{Name: "email", BusinessKey: true},
+					{Name: "name"},
+				},
+			},
+			expectedPK: []*Column{
+				{Name: "id", PrimaryKey: true},
+			},
+			expectedBK: []*Column{
+				{Name: "email", BusinessKey: true},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Table with no Primary Key",
+			inputTable: &Table{
+				Columns: []*Column{
+					{Name: "name"},
+					{Name: "address"},
+				},
+			},
+			expectedPK:    nil,
+			expectedBK:    nil,
+			expectedError: ErrNoPrimaryKey,
+		},
+		{
+			name: "Table with empty columns",
+			inputTable: &Table{
+				Columns: []*Column{},
+			},
+			expectedPK:    nil,
+			expectedBK:    nil,
+			expectedError: ErrNoPrimaryKey,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			pk, bk, err := tt.inputTable.PkAndBk()
+			assert.Equal(t, tt.expectedError == nil, err == nil)
+			if err == nil {
+				assert.Len(t, pk, len(tt.expectedPK))
+				assert.Len(t, bk, len(tt.expectedBK))
+
+				for i, col := range pk {
+					assert.Equal(t, tt.expectedPK[i].Name, col.Name)
+					assert.Equal(t, tt.expectedPK[i].PrimaryKey, col.PrimaryKey)
+					assert.Equal(t, tt.expectedPK[i].BusinessKey, col.BusinessKey)
+				}
+
+				for i, col := range bk {
+					assert.Equal(t, tt.expectedBK[i].Name, col.Name)
+					assert.Equal(t, tt.expectedBK[i].PrimaryKey, col.PrimaryKey)
+					assert.Equal(t, tt.expectedBK[i].BusinessKey, col.BusinessKey)
+				}
+			} else {
+				assert.ErrorIs(t, err, tt.expectedError)
+			}
+		})
+	}
+}
