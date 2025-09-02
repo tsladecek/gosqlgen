@@ -13,6 +13,10 @@ import (
 
 const TagPrefix = "gosqlgen"
 
+type Valuer interface {
+	New(prev any) (any, error)
+}
+
 type Column struct {
 	Name          string     // name of the sql column
 	FieldName     string     // name of the field in the struct
@@ -24,6 +28,16 @@ type Column struct {
 	BusinessKey   bool       // is this business key (bk)
 	AutoIncrement bool       // is this auto incremented? Important for inserts, since this column must be fetched
 	SQLType       string     // this can be driver specific
+
+	// useful only for test valuer
+	min        int
+	max        int
+	length     int
+	valueSet   []string
+	charSet    []rune
+	isJson     bool
+	isUUID     bool
+	TestValuer Valuer // TestValuer
 
 	fk string
 }
@@ -317,6 +331,8 @@ MainLoop:
 					column.Type = info.TypeOf(fff.Type)
 					column.FieldName = fff.Names[0].Name
 					table.Columns = append(table.Columns, column)
+
+					column.TestValuer = NewValuerNumeric(0, 255, false)
 				}
 			}
 		}
