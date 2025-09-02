@@ -1,0 +1,105 @@
+{{define "main"}}
+func TestGoSQLGen_{{.StructName}}(t *testing.T) {
+	ctx := t.Context()
+	var err error
+
+	{{ template "getInsert" . }}
+
+	{{ if not .SkipTestUpdate }}
+	{{ template "update" . }}
+	{{ end }}
+
+	{{ if not .SkipTestDelete }}
+	{{ template "delete" . }}
+	{{ end }}
+	}
+{{end}}
+
+{{define "getInsert"}}
+t.Run("getInsert", func(t *testing.T) {
+	{{ .Inserts }}
+
+	// Get By Primary Keys
+	gotByPk := {{.StructName}}{}
+	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.NoError(t, err)
+	assert.Equal(t, {{.TableVarName}}, gotByPk)
+
+	{{ if .BusinessKeys }}// Get By Business Keys
+	gotByBk := {{.StructName}}{}
+	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.NoError(t, err)
+	assert.Equal(t, {{.TableVarName}}, gotByBk)
+	assert.Equal(t, gotByPk, gotByBk)
+	{{ end }}
+})
+{{end}}
+
+{{define "update"}}
+t.Run("update", func(t *testing.T) {
+	{{ .Inserts }}
+
+	// Get By Primary Keys
+	gotByPk := {{.StructName}}{}
+	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.NoError(t, err)
+	assert.Equal(t, {{.TableVarName}}, gotByPk)
+
+	{{ if .BusinessKeys }}// Get By Business Keys
+	gotByBk := {{.StructName}}{}
+	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.NoError(t, err)
+	assert.Equal(t, {{.TableVarName}}, gotByBk)
+	assert.Equal(t, gotByPk, gotByBk)
+	{{ end }}
+	
+	{{ if and .UpdateableColumnsPK .UpdateableColumnsBK}}
+	var gotAfterUpdate {{.StructName}}
+	var u {{.StructName}}
+
+	// Update By Primary Keys{{ range .UpdateableColumnsPK }}
+	// {{.FieldName}}
+	u = gotByPk
+	u.{{ .FieldName }} = {{ .NewValue }}
+	err = u.{{ $.MethodUpdateByPrimaryKeys }}(ctx, testDb)
+	require.NoError(t, err)
+	
+	gotAfterUpdate = {{ $.StructName }}{}
+	err = gotAfterUpdate.{{ $.MethodGetByPrimaryKeys }}(ctx, testDb, {{ range $.PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}} )
+	require.NoError(t, err)
+
+	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
+	{{ end }}
+	{{ if .BusinessKeys }}// Update By Business Keys{{ range .UpdateableColumnsBK }}
+	// {{.FieldName}}
+	u = gotByBk
+	u.{{ .FieldName }} = {{ .NewValue }}
+	err = u.{{ $.MethodUpdateByBusinessKeys }}(ctx, testDb)
+	require.NoError(t, err)
+	
+	gotAfterUpdate = {{ $.StructName }}{}
+	err = gotAfterUpdate.{{ $.MethodGetByPrimaryKeys }}(ctx, testDb, {{ range $.PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}} )
+	require.NoError(t, err)
+	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
+	{{ end }}
+	{{ end }}
+	{{ end }}
+})
+{{end}}
+
+{{define "delete"}}
+t.Run("delete", func(t *testing.T) {
+	{{ .Inserts }}
+
+	got := {{.StructName}}{}
+	err = got.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.NoError(t, err)
+	assert.Equal(t, {{.TableVarName}}, got)
+
+	err = got.delete(ctx, testDb)
+	require.NoError(t, err)
+	gotAfterDelete := {{ $.StructName }}{}
+	err = gotAfterDelete.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
+	require.Error(t, err)
+})
+{{end}}
