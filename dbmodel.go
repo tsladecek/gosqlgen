@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"go/types"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -35,7 +36,7 @@ type Column struct {
 	length     int
 	valueSet   []string
 	charSet    []rune
-	isJson     bool
+	isJSON     bool
 	isUUID     bool
 	TestValuer Valuer // TestValuer
 
@@ -65,6 +66,8 @@ var (
 	ErrEmptyTag          = errors.New("tag empty")
 	ErrTagFieldNumber    = errors.New("tag must have two required fields: column name and sql type (e.g. name,varchar(31))")
 	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
+	ErrFlagFieldNumber   = errors.New("invalid flag spec")
+	ErrFlagFormat        = errors.New("invalid flag format")
 
 	ErrColumnNotFound = errors.New("column not found")
 
@@ -139,6 +142,10 @@ func ExtractTagContent(tagName, input string) (string, error) {
 	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
 }
 
+func hasPrefix(s, prefix string) bool {
+	return strings.HasPrefix(strings.ToLower(s), prefix)
+}
+
 // NewColumn constructs Column from a tag. Foreign keys are stored
 // in a temporary private field "fk". All relationships are reconcilled
 // after all tables have been parsed
@@ -168,22 +175,84 @@ func NewColumn(tag string) (*Column, error) {
 
 	for _, tagItem := range items[2:] {
 		m := strings.TrimSpace(tagItem)
-		if m == "pk" {
-			c.PrimaryKey = true
-		} else if m == "pk ai" {
+
+		switch {
+		case m == "pk ai":
 			c.PrimaryKey = true
 			c.AutoIncrement = true
-		} else if strings.HasPrefix(m, "fk") {
+		case m == "pk":
+			c.PrimaryKey = true
+		case m == "bk":
+			c.BusinessKey = true
+		case m == "sd":
+			c.SoftDelete = true
+		case hasPrefix(m, "fk"):
 			fkFields := strings.Split(m, " ")
 			if len(fkFields) != 2 {
 				return nil, ErrFKSpecFieldNumber
 			}
 			c.fk = fkFields[1]
-		} else if m == "sd" {
-			c.SoftDelete = true
-		} else if m == "bk" {
-			c.BusinessKey = true
+		case m == "json":
+			c.isJSON = true
+		case m == "uuid":
+			c.isUUID = true
+		case hasPrefix(m, "min"):
+			fields := strings.Split(m, " ")
+			if len(fields) != 2 {
+				return nil, ErrFlagFieldNumber
+			}
+			if n, err := strconv.Atoi(fields[1]); err == nil {
+				c.min = n
+			}
+			return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+		case hasPrefix(m, "max"):
+			fields := strings.Split(m, " ")
+			if len(fields) != 2 {
+				return nil, ErrFlagFieldNumber
+			}
+			if n, err := strconv.Atoi(fields[1]); err == nil {
+				c.max = n
+			}
+			return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+		case hasPrefix(m, "length"):
+			fields := strings.Split(m, " ")
+			if len(fields) != 2 {
+				return nil, ErrFlagFieldNumber
+			}
+			if n, err := strconv.Atoi(fields[1]); err == nil {
+				c.length = n
+			}
+			return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+		case hasPrefix(m, "valueset"):
+			fields := strings.Split(m, " ")
+			if len(fields) != 2 {
+				return nil, ErrFlagFieldNumber
+			}
+			if !strings.HasPrefix(fields[1], "(") || !strings.HasSuffix(fields[1], ")") {
+				return nil, fmt.Errorf("%w: must be inside parentheses", ErrFlagFormat)
+			}
+			s := strings.Split(strings.TrimSuffix(strings.TrimPrefix(fields[1], "("), ")"), ",")
+			c.valueSet = s
+		case hasPrefix(m, "charset"):
+			fields := strings.Split(m, " ")
+			if len(fields) != 2 {
+				return nil, ErrFlagFieldNumber
+			}
+			if !strings.HasPrefix(fields[1], "(") || !strings.HasSuffix(fields[1], ")") {
+				return nil, fmt.Errorf("%w: must be inside parentheses", ErrFlagFormat)
+			}
+			r := []rune{}
+
+			for s := range strings.SplitSeq(strings.TrimSuffix(strings.TrimPrefix(fields[1], "("), ")"), ",") {
+				s = strings.TrimSpace(s)
+				if len(s) != 1 {
+					return nil, fmt.Errorf("%w: char must be of length 1", ErrFlagFormat)
+				}
+				r = append(r, rune(s[0]))
+			}
+			c.charSet = r
 		}
+
 	}
 	return c, nil
 }
