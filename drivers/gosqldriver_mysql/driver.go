@@ -1,7 +1,6 @@
 package gosqldrivermysql
 
 import (
-	crand "crypto/rand"
 	"fmt"
 	"io"
 	"slices"
@@ -281,9 +280,4 @@ func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 
 	d.updateTemplate.Execute(w, data)
 	return nil
-}
-
-func randString(maxLength int) string {
-	s := crand.Text()
-	return s[:min(len(s), maxLength)]
 }

@@ -381,10 +381,26 @@ func (c *Column) inferTestValuer() error {
 	t := c.Type.String()
 	u := c.Type.Underlying().String()
 
-	// stringTypes := ["string", ""]
+	stringTypes := []string{"string", "[]byte", "byte", "rune", "database/sql.NullString", "database/sql.NullByte"}
+	stringJsonTypes := []string{"encoding/json.RawMessage"}
+
+	numericIntegerTypes := []string{"int", "int8", "int16", "int32", "int64", "database/sql.NullInt16", "database/sql.NullInt32", "database/sql.NullInt64"}
+	numericFloatTypes := []string{"float32", "float64", "database/sql.NullFloat64"}
+
+	timeTypes := []string{"time.Time", "database/sql.NullTime"}
+	booleanTypes := []string{"bool", "database/sql.NullBool"}
 
 	switch {
-	case t == "string" || u == "string":
+	case slices.Contains(stringJsonTypes, t) || slices.Contains(stringJsonTypes, u):
+		v, err := NewValuerString(c.length, stringKindJSON, c.charSet, c.valueSet)
+		if err != nil {
+			return err
+		}
+
+		c.TestValuer = v
+		return nil
+
+	case slices.Contains(stringTypes, t) || slices.Contains(stringTypes, u):
 		kind := stringKindBasic
 		if c.isJSON {
 			kind = stringKindJSON
@@ -399,9 +415,45 @@ func (c *Column) inferTestValuer() error {
 
 		c.TestValuer = v
 		return nil
+
+	case slices.Contains(numericIntegerTypes, t) || slices.Contains(numericIntegerTypes, u):
+		v, err := NewValuerNumeric(c.min, c.max, false)
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+
+	case slices.Contains(numericFloatTypes, t) || slices.Contains(numericFloatTypes, u):
+		v, err := NewValuerNumeric(c.min, c.max, true)
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+
+	case slices.Contains(booleanTypes, t) || slices.Contains(booleanTypes, u):
+		v, err := NewValuerTime()
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+
+	case slices.Contains(timeTypes, t) || slices.Contains(timeTypes, u):
+		v, err := NewValuerTime()
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("unsupported type")
 }
 
 // NewDBModel parses the File and constructs the entire DBModel.
@@ -464,7 +516,10 @@ MainLoop:
 					column.FieldName = fff.Names[0].Name
 					table.Columns = append(table.Columns, column)
 
-					column.TestValuer = NewValuerNumeric(0, 255, false)
+					err = column.inferTestValuer()
+					if err != nil {
+						return nil, fmt.Errorf("%w: when inferring test valuer - table=%s, column=%s", err, table.StructName, column.FieldName)
+					}
 				}
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"slices"
+	"time"
 )
 
 var (
@@ -19,8 +20,11 @@ type valuerNumeric struct {
 	isFloat bool
 }
 
-func NewValuerNumeric(minValue, maxValue int, isFloat bool) valuerNumeric {
-	return valuerNumeric{max: maxValue, min: minValue, isFloat: isFloat}
+func NewValuerNumeric(minValue, maxValue int, isFloat bool) (valuerNumeric, error) {
+	if maxValue == 0 && minValue == 0 {
+		maxValue = 32
+	}
+	return valuerNumeric{max: maxValue, min: minValue, isFloat: isFloat}, nil
 }
 
 func (v valuerNumeric) randomInt(prev int) (int, error) {
@@ -135,4 +139,29 @@ func (v valuerString) New(prev any) (any, error) {
 	}
 
 	return "", ErrStringKind
+}
+
+type valuerTime struct{}
+
+func NewValuerTime() (valuerTime, error) {
+	return valuerTime{}, nil
+}
+
+func (v valuerTime) New(prev any) (any, error) {
+	return time.Now(), nil
+}
+
+type valuerBoolean struct{}
+
+func NewValuerBoolean() (valuerBoolean, error) {
+	return valuerBoolean{}, nil
+}
+
+func (v valuerBoolean) New(prev any) (any, error) {
+	p, ok := prev.(bool)
+
+	if !ok {
+		return false, ErrPrevType
+	}
+	return !p, nil
 }

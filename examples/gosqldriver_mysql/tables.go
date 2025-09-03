@@ -1,7 +1,10 @@
-//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql
+//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql -debug
 package gosqldrivermysql
 
-import "database/sql"
+import (
+	"database/sql"
+	"encoding/json"
+)
 
 type Continent string
 
@@ -16,9 +19,10 @@ type ShouldBeSkipped struct {
 
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id;pk;ai"`
-	Id    string `gosqlgen:"id;bk"`
-	Name  string `gosqlgen:"name"`
+	RawId   int             `gosqlgen:"_id;pk;ai"`
+	Id      string          `gosqlgen:"id;bk"`
+	Name    []byte          `gosqlgen:"name"`
+	payload json.RawMessage `gosqlgen:"payload"`
 }
 
 // gosqlgen: admins;skip tests
@@ -33,7 +37,7 @@ type Country struct {
 	Id        string    `gosqlgen:"id;bk"`
 	Name      string    `gosqlgen:"name"`
 	GPS       string    `gosqlgen:"gps"`
-	Continent Continent `gosqlgen:"continent;valueset (Asia, Europe)"`
+	Continent Continent `gosqlgen:"continent;valueset (Asia,Europe)"`
 }
 
 // gosqlgen: addresses
