@@ -63,7 +63,7 @@ var (
 	ErrNoClosingQuote   = errors.New("tag not closed with quote")
 
 	ErrEmptyTag          = errors.New("tag empty")
-	ErrTagFieldNumber    = errors.New("tag must have two required fields: column name and sql type (e.g. name,varchar(31))")
+	ErrTagFieldNumber    = errors.New("tag must have at least one field representing column name")
 	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
 	ErrFlagFieldNumber   = errors.New("invalid flag spec")
 	ErrFlagFormat        = errors.New("invalid flag format")
@@ -141,12 +141,12 @@ func ExtractTagContent(tagName, input string) (string, error) {
 	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
 }
 
-func tagHasPrefix(tag, prefix string) bool {
-	return strings.HasPrefix(strings.ToLower(tag), prefix)
+func tagHasPrefix(tag string, prefix Flag) bool {
+	return strings.HasPrefix(strings.ToLower(tag), string(prefix))
 }
 
-func tagEquals(tag, value string) bool {
-	return strings.ToLower(strings.TrimSpace(tag)) == strings.ToLower(strings.TrimSpace(value))
+func tagEquals(tag string, value Flag) bool {
+	return strings.EqualFold(strings.TrimSpace(tag), string(value))
 }
 
 func tagListContent(tag string) ([]string, error) {
@@ -183,6 +183,23 @@ func tagInt(tag string) (int, error) {
 
 }
 
+type Flag string
+
+const (
+	FlagPrimaryKey    Flag = "pk"
+	FlagBusinesKey    Flag = "bk"
+	FlagSoftDelete    Flag = "sd"
+	FlagForeignKey    Flag = "fk"
+	FlagAutoIncrement Flag = "ai"
+	FlagMin           Flag = "min"
+	FlagMax           Flag = "max"
+	FlagLength        Flag = "length"
+	FlagJSON          Flag = "json"
+	FlagUUID          Flag = "uuid"
+	FlagValueSet      Flag = "valueset"
+	FlagCharSet       Flag = "charset"
+)
+
 // NewColumn constructs Column from a tag. Foreign keys are stored
 // in a temporary private field "fk". All relationships are reconcilled
 // after all tables have been parsed
@@ -213,50 +230,50 @@ func NewColumn(tag string) (*Column, error) {
 		m := strings.TrimSpace(tagItem)
 
 		switch {
-		case tagEquals(m, "ai"):
+		case tagEquals(m, FlagAutoIncrement):
 			c.AutoIncrement = true
-		case tagEquals(m, "pk"):
+		case tagEquals(m, FlagPrimaryKey):
 			c.PrimaryKey = true
-		case tagEquals(m, "bk"):
+		case tagEquals(m, FlagBusinesKey):
 			c.BusinessKey = true
-		case tagEquals(m, "sd"):
+		case tagEquals(m, FlagSoftDelete):
 			c.SoftDelete = true
-		case tagHasPrefix(m, "fk"):
+		case tagHasPrefix(m, FlagForeignKey):
 			fkFields := strings.Split(m, " ")
 			if len(fkFields) != 2 {
 				return nil, ErrFKSpecFieldNumber
 			}
 			c.fk = fkFields[1]
-		case tagEquals(m, "json"):
+		case tagEquals(m, FlagJSON):
 			c.isJSON = true
-		case tagEquals(m, "uuid"):
+		case tagEquals(m, FlagUUID):
 			c.isUUID = true
-		case tagHasPrefix(m, "min"):
+		case tagHasPrefix(m, FlagMin):
 			n, err := tagInt(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: when parsing min, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
 			c.min = n
-		case tagHasPrefix(m, "max"):
+		case tagHasPrefix(m, FlagMax):
 			n, err := tagInt(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: when parsing max, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
 			c.max = n
-		case tagHasPrefix(m, "length"):
+		case tagHasPrefix(m, FlagLength):
 			n, err := tagInt(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: when parsing length, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
 			c.length = n
-		case tagHasPrefix(m, "valueset"):
+		case tagHasPrefix(m, FlagValueSet):
 			valueSet, err := tagListContent(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
 
 			c.valueSet = valueSet
-		case tagHasPrefix(m, "charset"):
+		case tagHasPrefix(m, FlagCharSet):
 			valueSet, err := tagListContent(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)

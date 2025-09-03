@@ -273,11 +273,6 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 			compFunc = assert.NotEqual
 		}
 
-		if typeString == "" {
-			compFunc(t, expected, tested)
-			return
-		}
-
 		compFunc(t, expected.Name, tested.Name)
 		compFunc(t, expected.FieldName, tested.FieldName)
 		compFunc(t, expected.PrimaryKey, tested.PrimaryKey)
@@ -293,13 +288,13 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	id, err := t1.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id)
-	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t1, Type: types.Typ[types.Int], TestValuer: valuerNumeric{}}, *id)
+	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t1, Type: types.Typ[types.Int], TestValuer: valuerNumeric{}}, *id)
 
 	// Table: table1, Column: name
 	name, err := t1.GetColumn("name")
 	require.NoError(t, err)
 	require.NotNil(t, name)
-	columnCompare(true, "", Column{Name: "name", FieldName: "Name", BusinessKey: true, Table: t1, Type: types.Typ[types.String]}, *name)
+	columnCompare(true, "string", Column{Name: "name", FieldName: "Name", BusinessKey: true, Table: t1, Type: types.Typ[types.String]}, *name)
 
 	// Table: table1, Column: name
 	deletedAt, err := t1.GetColumn("deleted_at")
@@ -316,12 +311,12 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	id2, err := t2.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id2)
-	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t2, Type: types.Typ[types.Int]}, *id2)
+	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t2, Type: types.Typ[types.Int]}, *id2)
 
 	table1Id, err := t2.GetColumn("table1_id")
 	require.NoError(t, err)
 	require.NotNil(t, table1Id)
-	columnCompare(true, "", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
+	columnCompare(true, "int", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
 }
 
 func TestNewDBModel_SadPath(t *testing.T) {
@@ -334,13 +329,13 @@ func TestNewDBModel_SadPath(t *testing.T) {
 			"package main",
 			"// gosqlgen: ",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id; int; pk;ai\"`",
+			"Id int `gosqlgen:\"id;pk;ai\"`",
 			"}"}, "\n"),
 			expectedError: ErrEmptyTablename},
 		{name: "valid struct with no table annotation should be skipped", content: strings.Join([]string{
 			"package main",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id; int; pk;ai\"`",
+			"Id int `gosqlgen:\"id;pk;ai\"`",
 			"}"}, "\n"),
 			expectedError: nil},
 		{name: "no tag found for column", content: strings.Join([]string{
@@ -355,9 +350,9 @@ func TestNewDBModel_SadPath(t *testing.T) {
 			"package main",
 			"// gosqlgen: table",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id\"`",
+			"Id int `gosqlgen:\"\"`",
 			"}"}, "\n"),
-			expectedError: ErrTagFieldNumber},
+			expectedError: ErrEmptyTag},
 	}
 
 	for _, tt := range cases {
