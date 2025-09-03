@@ -89,12 +89,12 @@ func TestNewColumn(t *testing.T) {
 	}{
 		{name: "invalid - empty tag", tag: fmt.Sprintf(`%s:""`, TagPrefix), expectedErr: ErrEmptyTag},
 		{name: "invalid - tag parsing", tag: fmt.Sprintf(`%s:col`, TagPrefix), expectedErr: ErrInvalidTagPrefix},
-		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table col;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
-		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
+		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;pk ai;fk table col;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
+		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;pk ai;fk;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
 		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;int;pk;ai;fk table.col;bk;sd"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col"}},
-		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;  int   ;    pk;ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col"}},
-		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;int;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true}},
-		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;int;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column"}},
+		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;      pk;ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col"}},
+		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true}},
+		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column"}},
 	}
 
 	for _, tt := range cases {
@@ -238,14 +238,14 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		"import \"database/sql\"",
 		"// gosqlgen: table1; skip tests",
 		"type Table1 struct {",
-		"Id int `gosqlgen:\"id; int; pk;ai\"`",
-		"Name string `gosqlgen:\"name; varchar(255); bk\"`",
-		"deleted_at sql.NullTime `gosqlgen:\"deleted_at; datetime; sd\"`",
+		"Id int `gosqlgen:\"id;pk;ai\"`",
+		"Name string `gosqlgen:\"name; bk\"`",
+		"deleted_at sql.NullTime `gosqlgen:\"deleted_at;sd\"`",
 		"}",
 		"// gosqlgen: table2",
 		"type Table2 struct {",
-		"Id int `gosqlgen:\"id; int; pk;ai\"`",
-		"Table1Id int `gosqlgen:\"table1_id; int;fk table1.id\"`",
+		"Id int `gosqlgen:\"id;pk;ai\"`",
+		"Table1Id int `gosqlgen:\"table1_id;fk table1.id\"`",
 		"}",
 	}, "\n")))
 	require.NoError(t, err)
