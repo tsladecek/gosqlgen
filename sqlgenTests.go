@@ -49,15 +49,6 @@ type updatetableColumn struct {
 	NewValue  any
 }
 
-func updateableValuePostProcess(v any) any {
-	if vs, ok := v.(string); ok {
-		// surround with quotes if string
-		return fmt.Sprintf(`"%s"`, vs)
-	}
-
-	return v
-}
-
 func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
 	pk, bk, err := table.PkAndBk()
 	if err != nil {
@@ -66,28 +57,6 @@ func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
 
 	updateableColumnspk := make([]updatetableColumn, 0)
 	updateableColumnsbk := make([]updatetableColumn, 0)
-
-	for _, c := range table.Columns {
-		if c.PrimaryKey || c.BusinessKey || c.SoftDelete {
-			continue
-		}
-
-		vpk, err := driver.RandValue(c)
-		if err != nil {
-			return fmt.Errorf("Failed to infer updateable value for column %v: %w", *c, err)
-		}
-
-		vbk, err := driver.RandValue(c)
-		if err != nil {
-			return fmt.Errorf("Failed to infer updateable value for column %v: %w", *c, err)
-		}
-
-		ucpk := updatetableColumn{FieldName: c.FieldName, NewValue: updateableValuePostProcess(vpk)}
-		ucbk := updatetableColumn{FieldName: c.FieldName, NewValue: updateableValuePostProcess(vbk)}
-
-		updateableColumnspk = append(updateableColumnspk, ucpk)
-		updateableColumnsbk = append(updateableColumnsbk, ucbk)
-	}
 
 	data := make(map[string]any)
 	data["StructName"] = table.StructName

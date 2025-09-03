@@ -13,8 +13,6 @@ type Driver interface {
 	Create(w io.Writer, table *Table, methodName string) error
 	Update(w io.Writer, table *Table, keys []*Column, methodName string) error
 	Delete(w io.Writer, table *Table, keys []*Column, methodName string) error
-	// Generates random value given the sql type of the column
-	RandValue(c *Column) (any, error)
 }
 
 type MethodName string

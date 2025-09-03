@@ -88,14 +88,13 @@ func TestNewColumn(t *testing.T) {
 		expectedColumn Column
 	}{
 		{name: "invalid - empty tag", tag: fmt.Sprintf(`%s:""`, TagPrefix), expectedErr: ErrEmptyTag},
-		{name: "invalid - tag missing sql type", tag: fmt.Sprintf(`%s:"col"`, TagPrefix), expectedErr: ErrTagFieldNumber},
 		{name: "invalid - tag parsing", tag: fmt.Sprintf(`%s:col`, TagPrefix), expectedErr: ErrInvalidTagPrefix},
 		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table col;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
 		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
-		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table.col;bk;sd"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, SQLType: "int", fk: "table.col"}},
-		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;  int   ;    pk ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, SQLType: "int", fk: "table.col"}},
-		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;int;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", SQLType: "int", PrimaryKey: true}},
-		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;int;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", SQLType: "int"}},
+		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;int;pk;ai;fk table.col;bk;sd"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col"}},
+		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;  int   ;    pk;ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col"}},
+		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;int;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true}},
+		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;int;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column"}},
 	}
 
 	for _, tt := range cases {
@@ -239,13 +238,13 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		"import \"database/sql\"",
 		"// gosqlgen: table1; skip tests",
 		"type Table1 struct {",
-		"Id int `gosqlgen:\"id; int; pk ai\"`",
+		"Id int `gosqlgen:\"id; int; pk;ai\"`",
 		"Name string `gosqlgen:\"name; varchar(255); bk\"`",
 		"deleted_at sql.NullTime `gosqlgen:\"deleted_at; datetime; sd\"`",
 		"}",
 		"// gosqlgen: table2",
 		"type Table2 struct {",
-		"Id int `gosqlgen:\"id; int; pk ai\"`",
+		"Id int `gosqlgen:\"id; int; pk;ai\"`",
 		"Table1Id int `gosqlgen:\"table1_id; int;fk table1.id\"`",
 		"}",
 	}, "\n")))
@@ -288,21 +287,19 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		compFunc(t, expected.SoftDelete, tested.SoftDelete)
 		compFunc(t, expected.BusinessKey, tested.BusinessKey)
 		compFunc(t, expected.AutoIncrement, tested.AutoIncrement)
-		compFunc(t, expected.SQLType, tested.SQLType)
-
 	}
 
 	// Table: table1, Column: id
 	id, err := t1.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id)
-	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, SQLType: "int", Table: t1, Type: types.Typ[types.Int]}, *id)
+	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t1, Type: types.Typ[types.Int], TestValuer: valuerNumeric{}}, *id)
 
 	// Table: table1, Column: name
 	name, err := t1.GetColumn("name")
 	require.NoError(t, err)
 	require.NotNil(t, name)
-	columnCompare(true, "", Column{Name: "name", FieldName: "Name", BusinessKey: true, SQLType: "varchar(255)", Table: t1, Type: types.Typ[types.String]}, *name)
+	columnCompare(true, "", Column{Name: "name", FieldName: "Name", BusinessKey: true, Table: t1, Type: types.Typ[types.String]}, *name)
 
 	// Table: table1, Column: name
 	deletedAt, err := t1.GetColumn("deleted_at")
@@ -310,7 +307,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	require.NotNil(t, deletedAt)
 
 	assert.Equal(t, "database/sql.NullTime", deletedAt.Type.String())
-	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SQLType: "datetime", SoftDelete: true, Table: t1}, *deletedAt)
+	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SoftDelete: true, Table: t1}, *deletedAt)
 
 	assert.Equal(t, "table2", t2.Name)
 	assert.False(t, t2.SkipTests)
@@ -319,12 +316,12 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	id2, err := t2.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id2)
-	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, SQLType: "int", Table: t2, Type: types.Typ[types.Int]}, *id2)
+	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t2, Type: types.Typ[types.Int]}, *id2)
 
 	table1Id, err := t2.GetColumn("table1_id")
 	require.NoError(t, err)
 	require.NotNil(t, table1Id)
-	columnCompare(true, "", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, SQLType: "int", Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
+	columnCompare(true, "", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
 }
 
 func TestNewDBModel_SadPath(t *testing.T) {
@@ -337,13 +334,13 @@ func TestNewDBModel_SadPath(t *testing.T) {
 			"package main",
 			"// gosqlgen: ",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id; int; pk ai\"`",
+			"Id int `gosqlgen:\"id; int; pk;ai\"`",
 			"}"}, "\n"),
 			expectedError: ErrEmptyTablename},
 		{name: "valid struct with no table annotation should be skipped", content: strings.Join([]string{
 			"package main",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id; int; pk ai\"`",
+			"Id int `gosqlgen:\"id; int; pk;ai\"`",
 			"}"}, "\n"),
 			expectedError: nil},
 		{name: "no tag found for column", content: strings.Join([]string{

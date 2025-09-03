@@ -55,34 +55,6 @@ func TestGoSQLGen_User(t *testing.T) {
 		assert.Equal(t, tbl_users, gotByBk)
 		assert.Equal(t, gotByPk, gotByBk)
 
-		var gotAfterUpdate User
-		var u User
-
-		// Update By Primary Keys
-		// Name
-		u = gotByPk
-		u.Name = "46GRHQRLQDR34ZPHYZN553QG7S"
-		err = u.updateByPrimaryKeys(ctx, testDb)
-		require.NoError(t, err)
-
-		gotAfterUpdate = User{}
-		err = gotAfterUpdate.getByPrimaryKeys(ctx, testDb, tbl_users.RawId)
-		require.NoError(t, err)
-
-		assert.Equal(t, u.Name, gotAfterUpdate.Name)
-
-		// Update By Business Keys
-		// Name
-		u = gotByBk
-		u.Name = "GLZRUGSL5HRFB2JN67CPUDVXPX"
-		err = u.updateByBusinessKeys(ctx, testDb)
-		require.NoError(t, err)
-
-		gotAfterUpdate = User{}
-		err = gotAfterUpdate.getByPrimaryKeys(ctx, testDb, tbl_users.RawId)
-		require.NoError(t, err)
-		assert.Equal(t, u.Name, gotAfterUpdate.Name)
-
 	})
 
 	t.Run("delete", func(t *testing.T) {

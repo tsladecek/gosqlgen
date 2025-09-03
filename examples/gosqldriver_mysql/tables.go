@@ -14,20 +14,20 @@ type ShouldBeSkipped struct {
 
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id;int;pk ai"`
+	RawId int    `gosqlgen:"_id;int;pk;ai"`
 	Id    string `gosqlgen:"id;varchar(255);bk"`
 	Name  string `gosqlgen:"name;varchar(255);json;uuid;charset (a,b,c,d);valueset (e1,e2)"`
 }
 
 // // gosqlgen: admins;skip tests
 // type Admin struct {
-// 	RawId int    `gosqlgen:"_id;int;pk ai;fk users._id"`
+// 	RawId int    `gosqlgen:"_id;int;pk;ai;fk users._id"`
 // 	Name  string `gosqlgen:"name;varchar(255)"`
 // }
 //
 // // gosqlgen: countries
 // type Country struct {
-// 	RawId     int       `gosqlgen:"_id;int;pk ai"`
+// 	RawId     int       `gosqlgen:"_id;int;pk;ai"`
 // 	Id        string    `gosqlgen:"id;varchar(255);bk"`
 // 	Name      string    `gosqlgen:"name;varchar(255)"`
 // 	GPS       string    `gosqlgen:"gps;varchar(255)"`
@@ -36,7 +36,7 @@ type User struct {
 //
 // // gosqlgen: addresses
 // type Address struct {
-// 	RawId     int32        `gosqlgen:"_id;int;pk ai"`
+// 	RawId     int32        `gosqlgen:"_id;int;pk;ai"`
 // 	Id        string       `gosqlgen:"id;int;varchar(255);bk"`
 // 	Address   string       `gosqlgen:"address;varchar(255);bk"`
 // 	UserId    int          `gosqlgen:"user_id;int;fk users._id"`
@@ -46,7 +46,7 @@ type User struct {
 //
 // // gosqlgen: addresses_book
 // type AddressBook struct {
-// 	RawId     int    `gosqlgen:"_id;int;pk ai"`
+// 	RawId     int    `gosqlgen:"_id;int;pk;ai"`
 // 	Id        string `gosqlgen:"id;varchar(255);bk"`
 // 	AddressId int32  `gosqlgen:"address_id;int;fk addresses._id"`
 // }

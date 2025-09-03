@@ -28,7 +28,6 @@ type Column struct {
 	SoftDelete    bool       // does this column represent soft deletion (sd)
 	BusinessKey   bool       // is this business key (bk)
 	AutoIncrement bool       // is this auto incremented? Important for inserts, since this column must be fetched
-	SQLType       string     // this can be driver specific
 
 	// useful only for test valuer
 	min        int
@@ -142,8 +141,46 @@ func ExtractTagContent(tagName, input string) (string, error) {
 	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
 }
 
-func hasPrefix(s, prefix string) bool {
-	return strings.HasPrefix(strings.ToLower(s), prefix)
+func tagHasPrefix(tag, prefix string) bool {
+	return strings.HasPrefix(strings.ToLower(tag), prefix)
+}
+
+func tagEquals(tag, value string) bool {
+	return strings.ToLower(strings.TrimSpace(tag)) == strings.ToLower(strings.TrimSpace(value))
+}
+
+func tagListContent(tag string) ([]string, error) {
+	fields := strings.Split(tag, " ")
+	if len(fields) < 2 {
+		return nil, fmt.Errorf("%w: number of items in tag is less than two", ErrFlagFieldNumber)
+	}
+
+	content := strings.Join(fields[1:], " ")
+
+	if !strings.HasPrefix(content, "(") || !strings.HasSuffix(content, ")") {
+		return nil, fmt.Errorf("%w: tag content is not surrounded by parentheses", ErrFlagFormat)
+	}
+	res := []string{}
+
+	for s := range strings.SplitSeq(strings.TrimSuffix(strings.TrimPrefix(fields[1], "("), ")"), ",") {
+		res = append(res, strings.TrimSpace(s))
+	}
+
+	return res, nil
+}
+
+func tagInt(tag string) (int, error) {
+	fields := strings.Split(tag, " ")
+	if len(fields) != 2 {
+		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+	}
+	n, err := strconv.Atoi(fields[1])
+
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
+
 }
 
 // NewColumn constructs Column from a tag. Foreign keys are stored
@@ -161,92 +198,74 @@ func NewColumn(tag string) (*Column, error) {
 	}
 	items := strings.Split(tag, ";")
 
-	if len(items) < 2 {
+	if len(items) < 1 {
 		return nil, ErrTagFieldNumber
 	}
 
 	c := &Column{}
 	c.Name = strings.TrimSpace(items[0])
-	c.SQLType = strings.TrimSpace(items[1])
 
-	if len(items) == 2 {
+	if len(items) == 1 {
 		return c, nil
 	}
 
-	for _, tagItem := range items[2:] {
+	for _, tagItem := range items[1:] {
 		m := strings.TrimSpace(tagItem)
 
 		switch {
-		case m == "pk ai":
-			c.PrimaryKey = true
+		case tagEquals(m, "ai"):
 			c.AutoIncrement = true
-		case m == "pk":
+		case tagEquals(m, "pk"):
 			c.PrimaryKey = true
-		case m == "bk":
+		case tagEquals(m, "bk"):
 			c.BusinessKey = true
-		case m == "sd":
+		case tagEquals(m, "sd"):
 			c.SoftDelete = true
-		case hasPrefix(m, "fk"):
+		case tagHasPrefix(m, "fk"):
 			fkFields := strings.Split(m, " ")
 			if len(fkFields) != 2 {
 				return nil, ErrFKSpecFieldNumber
 			}
 			c.fk = fkFields[1]
-		case m == "json":
+		case tagEquals(m, "json"):
 			c.isJSON = true
-		case m == "uuid":
+		case tagEquals(m, "uuid"):
 			c.isUUID = true
-		case hasPrefix(m, "min"):
-			fields := strings.Split(m, " ")
-			if len(fields) != 2 {
-				return nil, ErrFlagFieldNumber
+		case tagHasPrefix(m, "min"):
+			n, err := tagInt(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when parsing min, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
-			if n, err := strconv.Atoi(fields[1]); err == nil {
-				c.min = n
+			c.min = n
+		case tagHasPrefix(m, "max"):
+			n, err := tagInt(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when parsing max, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
-			return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
-		case hasPrefix(m, "max"):
-			fields := strings.Split(m, " ")
-			if len(fields) != 2 {
-				return nil, ErrFlagFieldNumber
+			c.max = n
+		case tagHasPrefix(m, "length"):
+			n, err := tagInt(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when parsing length, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
-			if n, err := strconv.Atoi(fields[1]); err == nil {
-				c.max = n
+			c.length = n
+		case tagHasPrefix(m, "valueset"):
+			valueSet, err := tagListContent(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
-			return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
-		case hasPrefix(m, "length"):
-			fields := strings.Split(m, " ")
-			if len(fields) != 2 {
-				return nil, ErrFlagFieldNumber
-			}
-			if n, err := strconv.Atoi(fields[1]); err == nil {
-				c.length = n
-			}
-			return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
-		case hasPrefix(m, "valueset"):
-			fields := strings.Split(m, " ")
-			if len(fields) != 2 {
-				return nil, ErrFlagFieldNumber
-			}
-			if !strings.HasPrefix(fields[1], "(") || !strings.HasSuffix(fields[1], ")") {
-				return nil, fmt.Errorf("%w: must be inside parentheses", ErrFlagFormat)
-			}
-			s := strings.Split(strings.TrimSuffix(strings.TrimPrefix(fields[1], "("), ")"), ",")
-			c.valueSet = s
-		case hasPrefix(m, "charset"):
-			fields := strings.Split(m, " ")
-			if len(fields) != 2 {
-				return nil, ErrFlagFieldNumber
-			}
-			if !strings.HasPrefix(fields[1], "(") || !strings.HasSuffix(fields[1], ")") {
-				return nil, fmt.Errorf("%w: must be inside parentheses", ErrFlagFormat)
+
+			c.valueSet = valueSet
+		case tagHasPrefix(m, "charset"):
+			valueSet, err := tagListContent(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
 			}
 			r := []rune{}
 
-			for s := range strings.SplitSeq(strings.TrimSuffix(strings.TrimPrefix(fields[1], "("), ")"), ",") {
-				s = strings.TrimSpace(s)
+			for _, s := range valueSet {
 				if len(s) != 1 {
-					return nil, fmt.Errorf("%w: char must be of length 1", ErrFlagFormat)
+					return nil, fmt.Errorf("%w: char must be of length 1, table=%s, column=%s", ErrFlagFormat, c.Table.StructName, c.FieldName)
 				}
 				r = append(r, rune(s[0]))
 			}
