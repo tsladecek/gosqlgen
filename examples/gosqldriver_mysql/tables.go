@@ -1,5 +1,7 @@
-//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql -debug
+//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql
 package gosqldrivermysql
+
+import "database/sql"
 
 type Continent string
 
@@ -14,39 +16,39 @@ type ShouldBeSkipped struct {
 
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id;int;pk;ai"`
-	Id    string `gosqlgen:"id;varchar(255);bk"`
-	Name  string `gosqlgen:"name;varchar(255);json;uuid;charset (a,b,c,d);valueset (e1,e2)"`
+	RawId int    `gosqlgen:"_id;pk;ai"`
+	Id    string `gosqlgen:"id;bk"`
+	Name  string `gosqlgen:"name"`
 }
 
-// // gosqlgen: admins;skip tests
-// type Admin struct {
-// 	RawId int    `gosqlgen:"_id;int;pk;ai;fk users._id"`
-// 	Name  string `gosqlgen:"name;varchar(255)"`
-// }
-//
-// // gosqlgen: countries
-// type Country struct {
-// 	RawId     int       `gosqlgen:"_id;int;pk;ai"`
-// 	Id        string    `gosqlgen:"id;varchar(255);bk"`
-// 	Name      string    `gosqlgen:"name;varchar(255)"`
-// 	GPS       string    `gosqlgen:"gps;varchar(255)"`
-// 	Continent Continent `gosqlgen:"continent;enum('Asia', 'Europe')"`
-// }
-//
-// // gosqlgen: addresses
-// type Address struct {
-// 	RawId     int32        `gosqlgen:"_id;int;pk;ai"`
-// 	Id        string       `gosqlgen:"id;int;varchar(255);bk"`
-// 	Address   string       `gosqlgen:"address;varchar(255);bk"`
-// 	UserId    int          `gosqlgen:"user_id;int;fk users._id"`
-// 	CountryId int          `gosqlgen:"country_id;int;fk countries._id"`
-// 	DeletedAt sql.NullTime `gosqlgen:"deleted_at;datetime;sd"`
-// }
-//
-// // gosqlgen: addresses_book
-// type AddressBook struct {
-// 	RawId     int    `gosqlgen:"_id;int;pk;ai"`
-// 	Id        string `gosqlgen:"id;varchar(255);bk"`
-// 	AddressId int32  `gosqlgen:"address_id;int;fk addresses._id"`
-// }
+// gosqlgen: admins;skip tests
+type Admin struct {
+	RawId int    `gosqlgen:"_id;pk;ai;fk users._id"`
+	Name  string `gosqlgen:"name"`
+}
+
+// gosqlgen: countries
+type Country struct {
+	RawId     int       `gosqlgen:"_id;pk;ai"`
+	Id        string    `gosqlgen:"id;bk"`
+	Name      string    `gosqlgen:"name"`
+	GPS       string    `gosqlgen:"gps"`
+	Continent Continent `gosqlgen:"continent;valueset (Asia, Europe)"`
+}
+
+// gosqlgen: addresses
+type Address struct {
+	RawId     int32        `gosqlgen:"_id;pk;ai"`
+	Id        string       `gosqlgen:"id;bk"`
+	Address   string       `gosqlgen:"address;bk"`
+	UserId    int          `gosqlgen:"user_id;fk users._id"`
+	CountryId int          `gosqlgen:"country_id;fk countries._id"`
+	DeletedAt sql.NullTime `gosqlgen:"deleted_at;sd"`
+}
+
+// gosqlgen: addresses_book
+type AddressBook struct {
+	RawId     int    `gosqlgen:"_id;pk;ai"`
+	Id        string `gosqlgen:"id;bk"`
+	AddressId int32  `gosqlgen:"address_id;fk addresses._id"`
+}

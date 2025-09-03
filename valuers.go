@@ -96,6 +96,17 @@ func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []str
 }
 
 func (v valuerString) basic(prev string) (string, error) {
+	if len(v.valueSet) > 0 {
+		if len(v.valueSet) == 1 {
+			return "", fmt.Errorf("%w: can not infer new value since the value set contains only one item", ErrValuer)
+		}
+
+		if v.valueSet[0] == prev {
+			return v.valueSet[1], nil
+		}
+		return v.valueSet[0], nil
+	}
+
 	return "", nil
 }
 

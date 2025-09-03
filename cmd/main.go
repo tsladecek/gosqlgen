@@ -16,6 +16,13 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	supportedDrivers := []string{"gosqldriver_mysql"}
 
 	debug := flag.Bool("debug", false, "debug")
@@ -27,25 +34,23 @@ func main() {
 	flag.Parse()
 
 	if !slices.Contains(supportedDrivers, *driver) {
-		fmt.Println("Error: Unsupported driver. Supported: " + strings.Join(supportedDrivers, ", "))
-		os.Exit(1)
+		return fmt.Errorf("unsupported driver %s; supported are: %s", *driver, strings.Join(supportedDrivers, ", "))
 	}
 
 	filename := os.Getenv("GOFILE")
 	if filename == "" {
-		fmt.Println("Error: GOFILE environment variable not set.")
-		os.Exit(1)
+		return fmt.Errorf("GOFILE environment variable not set.")
 	}
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w: when parsing file", err)
 	}
 
 	dbModel, err := gosqlgen.NewDBModel(fset, f)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w: when constructing db model", err)
 	}
 
 	if *debug {
@@ -54,10 +59,12 @@ func main() {
 
 	d, err := gosqldrivermysql.New()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w: when initializing driver", err)
 	}
 	err = gosqlgen.CreateTemplates(d, dbModel, *output, *outputTest)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("%w: when generating code from templates", err)
 	}
+
+	return nil
 }

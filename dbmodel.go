@@ -158,7 +158,7 @@ func tagListContent(tag string) ([]string, error) {
 	content := strings.Join(fields[1:], " ")
 
 	if !strings.HasPrefix(content, "(") || !strings.HasSuffix(content, ")") {
-		return nil, fmt.Errorf("%w: tag content is not surrounded by parentheses", ErrFlagFormat)
+		return nil, fmt.Errorf("%w: tag content %s is not surrounded by parentheses", ErrFlagFormat, content)
 	}
 	res := []string{}
 
@@ -251,38 +251,38 @@ func NewColumn(tag string) (*Column, error) {
 		case tagHasPrefix(m, FlagMin):
 			n, err := tagInt(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: when parsing min, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+				return nil, fmt.Errorf("%w: when parsing min, column=%s", err, c.Name)
 			}
 			c.min = n
 		case tagHasPrefix(m, FlagMax):
 			n, err := tagInt(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: when parsing max, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+				return nil, fmt.Errorf("%w: when parsing max, column=%s", err, c.Name)
 			}
 			c.max = n
 		case tagHasPrefix(m, FlagLength):
 			n, err := tagInt(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: when parsing length, table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+				return nil, fmt.Errorf("%w: when parsing length, column=%s", err, c.Name)
 			}
 			c.length = n
 		case tagHasPrefix(m, FlagValueSet):
 			valueSet, err := tagListContent(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
 			}
 
 			c.valueSet = valueSet
 		case tagHasPrefix(m, FlagCharSet):
 			valueSet, err := tagListContent(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: table=%s, column=%s", err, c.Table.StructName, c.FieldName)
+				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
 			}
 			r := []rune{}
 
 			for _, s := range valueSet {
 				if len(s) != 1 {
-					return nil, fmt.Errorf("%w: char must be of length 1, table=%s, column=%s", ErrFlagFormat, c.Table.StructName, c.FieldName)
+					return nil, fmt.Errorf("%w: char must be of length 1, column=%s", ErrFlagFormat, c.Name)
 				}
 				r = append(r, rune(s[0]))
 			}
@@ -374,6 +374,33 @@ func (d *DBModel) ReconcileRelationships() error {
 			}
 		}
 	}
+	return nil
+}
+
+func (c *Column) inferTestValuer() error {
+	t := c.Type.String()
+	u := c.Type.Underlying().String()
+
+	// stringTypes := ["string", ""]
+
+	switch {
+	case t == "string" || u == "string":
+		kind := stringKindBasic
+		if c.isJSON {
+			kind = stringKindJSON
+		} else if c.isUUID {
+			kind = stringKindUUID
+		}
+
+		v, err := NewValuerString(c.length, kind, c.charSet, c.valueSet)
+		if err != nil {
+			return err
+		}
+
+		c.TestValuer = v
+		return nil
+	}
+
 	return nil
 }
 
