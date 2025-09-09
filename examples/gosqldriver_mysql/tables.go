@@ -28,7 +28,7 @@ type User struct {
 // gosqlgen: admins;skip tests
 type Admin struct {
 	RawId int    `gosqlgen:"_id;pk;ai;fk users._id"`
-	Name  string `gosqlgen:"name"`
+	Name  string `gosqlgen:"name; length 31"`
 }
 
 // gosqlgen: countries

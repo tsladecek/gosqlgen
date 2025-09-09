@@ -30,8 +30,8 @@ type Column struct {
 	AutoIncrement bool       // is this auto incremented? Important for inserts, since this column must be fetched
 
 	// useful only for test valuer
-	min        int
-	max        int
+	min        float64
+	max        float64
 	length     int
 	valueSet   []string
 	charSet    []rune
@@ -180,7 +180,19 @@ func tagInt(tag string) (int, error) {
 		return 0, err
 	}
 	return n, nil
+}
 
+func tagFloat(tag string) (float64, error) {
+	fields := strings.Split(tag, " ")
+	if len(fields) != 2 {
+		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+	}
+	n, err := strconv.ParseFloat(fields[1], 64)
+
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
 }
 
 type Flag string
@@ -249,13 +261,13 @@ func NewColumn(tag string) (*Column, error) {
 		case tagEquals(m, FlagUUID):
 			c.isUUID = true
 		case tagHasPrefix(m, FlagMin):
-			n, err := tagInt(m)
+			n, err := tagFloat(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: when parsing min, column=%s", err, c.Name)
 			}
 			c.min = n
 		case tagHasPrefix(m, FlagMax):
-			n, err := tagInt(m)
+			n, err := tagFloat(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: when parsing max, column=%s", err, c.Name)
 			}
