@@ -16,6 +16,8 @@ const TagPrefix = "gosqlgen"
 
 type Valuer interface {
 	New(prev any) (any, error)
+	Zero() any
+	Format(v any, typ string) (string, error)
 }
 
 type Column struct {
@@ -447,7 +449,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 
 	case slices.Contains(booleanTypes, t) || slices.Contains(booleanTypes, u):
-		v, err := NewValuerTime()
+		v, err := NewValuerBoolean()
 
 		if err != nil {
 			return err

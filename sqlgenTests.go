@@ -9,11 +9,24 @@ import (
 	"text/template"
 )
 
-func (t *Table) testInsert(w io.Writer) {
+func (t *Table) testInsert(w io.Writer) error {
 	d := []string{}
 
 	for _, c := range t.Columns {
 		if c.ForeignKey == nil {
+			if c.SoftDelete {
+				continue
+			}
+
+			v, err := c.TestValuer.New(c.TestValuer.Zero())
+			if err != nil {
+				return fmt.Errorf("%w: when generating new value for table=%s, column=%s", err, t.Name, c.Name)
+			}
+			vf, err := c.TestValuer.Format(v, c.Type.String())
+			if err != nil {
+				return fmt.Errorf("%w: when formating new value %t for table=%s, column=%s", err, v, t.Name, c.Name)
+			}
+			d = append(d, fmt.Sprintf("%s: %s", c.FieldName, vf))
 			continue
 		}
 
@@ -25,6 +38,8 @@ func (t *Table) testInsert(w io.Writer) {
 		err = tbl_%s.insert(ctx, testDb)
 		require.NoError(t, err)
 		`, t.Name, t.StructName, strings.Join(d, ", "), t.Name)
+
+	return nil
 }
 
 type testSuite struct {
@@ -52,7 +67,7 @@ type updatetableColumn struct {
 func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
 	pk, bk, err := table.PkAndBk()
 	if err != nil {
-		return fmt.Errorf("Could not parse primary and business keys from table: %w", err)
+		return fmt.Errorf("%w: could not parse primary and business keys from table", err)
 	}
 
 	updateableColumnspk := make([]updatetableColumn, 0)
@@ -71,7 +86,10 @@ func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
 	data["MethodUpdateByBusinessKeys"] = MethodUpdateByBusinessKeys
 
 	var inserts bytes.Buffer
-	table.testInsert(&inserts)
+	err = table.testInsert(&inserts)
+	if err != nil {
+		return fmt.Errorf("%w: when creating test inserts", err)
+	}
 
 	data["Inserts"] = inserts.String()
 

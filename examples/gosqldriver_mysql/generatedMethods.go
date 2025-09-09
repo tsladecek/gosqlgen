@@ -206,7 +206,7 @@ func (t *Country) delete(ctx context.Context, db dbExecutor) error {
 }
 
 func (t *User) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name, payload FROM users WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name, &t.payload)
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name, payload, age, min 0, max 130, drives_car, birthday FROM users WHERE _id = ?", _id).Scan(&t.RawId, &t.Id, &t.Name, &t.payload, &t.Age, &t.DrivesCar, &t.Birthday)
 
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func (t *User) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) err
 }
 
 func (t *User) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, name, payload FROM users WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name, &t.payload)
+	err := db.QueryRowContext(ctx, "SELECT _id, id, name, payload, age, min 0, max 130, drives_car, birthday FROM users WHERE id = ?", id).Scan(&t.RawId, &t.Id, &t.Name, &t.payload, &t.Age, &t.DrivesCar, &t.Birthday)
 
 	if err != nil {
 		return err
@@ -226,7 +226,7 @@ func (t *User) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) 
 }
 
 func (t *User) insert(ctx context.Context, db dbExecutor) error {
-	res, err := db.ExecContext(ctx, "INSERT INTO users (id, name, payload) VALUES (?, ?, ?)", t.Id, t.Name, t.payload)
+	res, err := db.ExecContext(ctx, "INSERT INTO users (id, name, payload, age, min 0, max 130, drives_car, birthday) VALUES (?, ?, ?, ?, ?, ?)", t.Id, t.Name, t.payload, t.Age, t.DrivesCar, t.Birthday)
 	if err != nil {
 		return err
 	}
@@ -241,12 +241,12 @@ func (t *User) insert(ctx context.Context, db dbExecutor) error {
 }
 
 func (t *User) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET name = ?, payload = ? WHERE _id=?", t.Name, t.payload, t.RawId)
+	_, err := db.ExecContext(ctx, "UPDATE users SET name = ?, payload = ?, age, min 0, max 130 = ?, drives_car = ?, birthday = ? WHERE _id=?", t.Name, t.payload, t.Age, t.DrivesCar, t.Birthday, t.RawId)
 	return err
 }
 
 func (t *User) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET name = ?, payload = ? WHERE id=?", t.Name, t.payload, t.Id)
+	_, err := db.ExecContext(ctx, "UPDATE users SET name = ?, payload = ?, age, min 0, max 130 = ?, drives_car = ?, birthday = ? WHERE id=?", t.Name, t.payload, t.Age, t.DrivesCar, t.Birthday, t.Id)
 	return err
 }
 

@@ -13,6 +13,8 @@ var (
 	ErrStringKind        = errors.New("unrecognized string kind")
 	ErrPrevType          = errors.New("type of previous value does not match valuer")
 	ErrValuerConstructor = errors.New("failed to construct valuer")
+	ErrValueFormat       = errors.New("failed to format value")
+	ErrValueType         = errors.New("invalid type")
 )
 
 type valuerNumeric struct {
@@ -87,6 +89,33 @@ func (v valuerNumeric) New(prev any) (any, error) {
 		return 0, fmt.Errorf("%w: previous value not a float", ErrValuer)
 	}
 	return v.randomFloat(p)
+}
+
+func (v valuerNumeric) Zero() any {
+	if v.isFloat {
+		return v.min
+	}
+	return int(v.min)
+}
+
+func (v valuerNumeric) Format(value any, typ string) (string, error) {
+	switch value.(type) {
+	case int, float64:
+		switch typ {
+		case "database/sql.NullInt16":
+			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", value), nil
+		case "database/sql.NullInt32":
+			return fmt.Sprintf("sql.NullInt32{Valid: true, Int32: %d}", value), nil
+		case "database/sql.NullInt64":
+			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", value), nil
+		case "database/sql.NullFloat64":
+			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %d}", value), nil
+		default:
+			return fmt.Sprintf("%v", value), nil
+		}
+	default:
+		return "", fmt.Errorf("value not a valid numeric type")
+	}
 }
 
 type stringKind string
@@ -189,6 +218,26 @@ func (v valuerString) New(prev any) (any, error) {
 	return "", ErrStringKind
 }
 
+func (v valuerString) Zero() any {
+	return v.randomString(v.length)
+}
+
+func (v valuerString) Format(value any, typ string) (string, error) {
+	vv, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("%w: value=%v, type=%s", ErrValueType, value, typ)
+	}
+
+	switch typ {
+	case "encoding/json.RawMessage", "[]byte":
+		return fmt.Sprintf("[]byte(`%s`)", vv), nil
+	case "sql.NullString":
+		return fmt.Sprintf("sql.NullString{Valid: true, String: \"%s\"}", vv), nil
+	default:
+		return fmt.Sprintf(`"%s"`, vv), nil
+	}
+}
+
 type valuerTime struct{}
 
 func NewValuerTime() (valuerTime, error) {
@@ -197,6 +246,20 @@ func NewValuerTime() (valuerTime, error) {
 
 func (v valuerTime) New(prev any) (any, error) {
 	return time.Now(), nil
+}
+
+func (v valuerTime) Zero() any {
+	return time.Now()
+}
+
+func (v valuerTime) Format(value any, typ string) (string, error) {
+	switch typ {
+	case "time.Time":
+		return "time.Now()", nil
+	case "database/sql.NullTime":
+		return "sql.NullTime{Valid: true, Time: time.Now()}", nil
+	}
+	return "", fmt.Errorf("%w: unrecognized type %s", ErrValueFormat, typ)
 }
 
 type valuerBoolean struct{}
@@ -212,4 +275,23 @@ func (v valuerBoolean) New(prev any) (any, error) {
 		return false, ErrPrevType
 	}
 	return !p, nil
+}
+
+func (v valuerBoolean) Zero() any {
+	return false
+}
+
+func (v valuerBoolean) Format(value any, typ string) (string, error) {
+	vv, ok := value.(bool)
+	if !ok {
+		return "", fmt.Errorf("%w: value=%v, type=%s", ErrValueType, value, typ)
+	}
+
+	switch typ {
+	case "bool":
+		return fmt.Sprintf("%t", vv), nil
+	case "database/sql.NullBool":
+		return fmt.Sprintf("sql.NullBool{Valid: true, Bool: %t}", vv), nil
+	}
+	return "", fmt.Errorf("%w: unrecognized type %s", ErrValueFormat, typ)
 }

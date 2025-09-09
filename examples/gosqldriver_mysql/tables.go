@@ -1,4 +1,4 @@
-//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql -debug
+//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql
 package gosqldrivermysql
 
 import (
@@ -19,10 +19,13 @@ type ShouldBeSkipped struct {
 
 // gosqlgen: users
 type User struct {
-	RawId   int             `gosqlgen:"_id;pk;ai"`
-	Id      string          `gosqlgen:"id;bk"`
-	Name    []byte          `gosqlgen:"name"`
-	payload json.RawMessage `gosqlgen:"payload"`
+	RawId     int             `gosqlgen:"_id;pk;ai"`
+	Id        string          `gosqlgen:"id;bk;length 5"`
+	Name      []byte          `gosqlgen:"name"`
+	payload   json.RawMessage `gosqlgen:"payload"`
+	Age       sql.NullInt32   `gosqlgen:"age, min 0, max 130"`
+	DrivesCar sql.NullBool    `gosqlgen:"drives_car"`
+	Birthday  sql.NullTime    `gosqlgen:"birthday"`
 }
 
 // gosqlgen: admins;skip tests
