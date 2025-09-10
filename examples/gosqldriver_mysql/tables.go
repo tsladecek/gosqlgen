@@ -23,7 +23,7 @@ type User struct {
 	Id        string          `gosqlgen:"id;bk;length 5"`
 	Name      []byte          `gosqlgen:"name"`
 	payload   json.RawMessage `gosqlgen:"payload"`
-	Age       sql.NullInt32   `gosqlgen:"age, min 0, max 130"`
+	Age       sql.NullInt32   `gosqlgen:"age; min 0; max 130"`
 	DrivesCar sql.NullBool    `gosqlgen:"drives_car"`
 	Birthday  sql.NullTime    `gosqlgen:"birthday"`
 }

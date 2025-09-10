@@ -39,6 +39,10 @@ t.Run("getInsert", func(t *testing.T) {
 t.Run("update", func(t *testing.T) {
 	{{ .Inserts }}
 
+	{{ .UpdatesPK }}
+	err = {{.TableVarName}}.{{.MethodUpdateByPrimaryKeys}}(ctx, testDb)
+	require.NoError(t, err)
+
 	// Get By Primary Keys
 	gotByPk := {{.StructName}}{}
 	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
@@ -46,43 +50,15 @@ t.Run("update", func(t *testing.T) {
 	assert.Equal(t, {{.TableVarName}}, gotByPk)
 
 	{{ if .BusinessKeys }}// Get By Business Keys
+	{{ .UpdatesBK }}
+	err = {{.TableVarName}}.{{$.MethodUpdateByBusinessKeys}}(ctx, testDb)
+	require.NoError(t, err)
+
 	gotByBk := {{.StructName}}{}
 	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
 	require.NoError(t, err)
 	assert.Equal(t, {{.TableVarName}}, gotByBk)
 	assert.Equal(t, gotByPk, gotByBk)
-	{{ end }}
-	
-	{{ if and .UpdateableColumnsPK .UpdateableColumnsBK}}
-	var gotAfterUpdate {{.StructName}}
-	var u {{.StructName}}
-
-	// Update By Primary Keys{{ range .UpdateableColumnsPK }}
-	// {{.FieldName}}
-	u = gotByPk
-	u.{{ .FieldName }} = {{ .NewValue }}
-	err = u.{{ $.MethodUpdateByPrimaryKeys }}(ctx, testDb)
-	require.NoError(t, err)
-	
-	gotAfterUpdate = {{ $.StructName }}{}
-	err = gotAfterUpdate.{{ $.MethodGetByPrimaryKeys }}(ctx, testDb, {{ range $.PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}} )
-	require.NoError(t, err)
-
-	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
-	{{ end }}
-	{{ if .BusinessKeys }}// Update By Business Keys{{ range .UpdateableColumnsBK }}
-	// {{.FieldName}}
-	u = gotByBk
-	u.{{ .FieldName }} = {{ .NewValue }}
-	err = u.{{ $.MethodUpdateByBusinessKeys }}(ctx, testDb)
-	require.NoError(t, err)
-	
-	gotAfterUpdate = {{ $.StructName }}{}
-	err = gotAfterUpdate.{{ $.MethodGetByPrimaryKeys }}(ctx, testDb, {{ range $.PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}} )
-	require.NoError(t, err)
-	assert.Equal(t, u.{{ .FieldName }}, gotAfterUpdate.{{ .FieldName }})
-	{{ end }}
-	{{ end }}
 	{{ end }}
 })
 {{end}}

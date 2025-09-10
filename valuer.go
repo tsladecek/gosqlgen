@@ -75,47 +75,36 @@ func (v valuerNumeric) randomFloat(prev float64) (float64, error) {
 	return v.min, nil
 }
 
-func (v valuerNumeric) New(prev any) (any, error) {
+func (v valuerNumeric) New(prev TestValue) (TestValue, error) {
 	if !v.isFloat {
-		p, ok := prev.(int)
+		p, ok := prev.Value.(int)
 		if !ok {
-			return 0, fmt.Errorf("%w: previous value not an int", ErrValuer)
+			return TestValue{}, fmt.Errorf("%w: previous value not an int", ErrValuer)
 		}
-		return v.randomInt(p)
+		iv, err := v.randomInt(p)
+		if err != nil {
+			return TestValue{}, fmt.Errorf("%w: when generating new integer value", ErrValuer)
+		}
+
+		return TestValue{Value: iv}, nil
 	}
 
-	p, ok := prev.(float64)
+	p, ok := prev.Value.(float64)
 	if !ok {
-		return 0, fmt.Errorf("%w: previous value not a float", ErrValuer)
+		return TestValue{}, fmt.Errorf("%w: previous value not a float", ErrValuer)
 	}
-	return v.randomFloat(p)
+	fv, err := v.randomFloat(p)
+	if err != nil {
+		return TestValue{}, fmt.Errorf("%w: when generating new integer value", ErrValuer)
+	}
+	return TestValue{Value: fv}, nil
 }
 
-func (v valuerNumeric) Zero() any {
+func (v valuerNumeric) Zero() TestValue {
 	if v.isFloat {
-		return v.min
+		return TestValue{v.min}
 	}
-	return int(v.min)
-}
-
-func (v valuerNumeric) Format(value any, typ string) (string, error) {
-	switch value.(type) {
-	case int, float64:
-		switch typ {
-		case "database/sql.NullInt16":
-			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", value), nil
-		case "database/sql.NullInt32":
-			return fmt.Sprintf("sql.NullInt32{Valid: true, Int32: %d}", value), nil
-		case "database/sql.NullInt64":
-			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", value), nil
-		case "database/sql.NullFloat64":
-			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %d}", value), nil
-		default:
-			return fmt.Sprintf("%v", value), nil
-		}
-	default:
-		return "", fmt.Errorf("value not a valid numeric type")
-	}
+	return TestValue{int(v.min)}
 }
 
 type stringKind string
@@ -150,16 +139,16 @@ func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []str
 	return valuerString{length: maxLength, kind: kind, charSet: charSet, valueSet: valueSet}, nil
 }
 
-func (v valuerString) basic(prev string) (string, error) {
+func (v valuerString) basic(prev string) (TestValue, error) {
 	if len(v.valueSet) > 0 {
 		if len(v.valueSet) == 1 {
-			return "", fmt.Errorf("%w: can not infer new value since the value set contains only one item", ErrValuer)
+			return TestValue{}, fmt.Errorf("%w: can not infer new value since the value set contains only one item", ErrValuer)
 		}
 
 		if v.valueSet[0] == prev {
-			return v.valueSet[1], nil
+			return TestValue{Value: v.valueSet[1]}, nil
 		}
-		return v.valueSet[0], nil
+		return TestValue{v.valueSet[0]}, nil
 	}
 
 	if prev == "" {
@@ -168,18 +157,18 @@ func (v valuerString) basic(prev string) (string, error) {
 			out[i] = v.charSet[rand.Intn(len(v.charSet))]
 		}
 
-		return string(out), nil
+		return TestValue{Value: string(out)}, nil
 	}
 
 	for _, c := range v.charSet {
 		if rune(prev[0]) != c {
 			out := []rune(prev)
 			out[0] = c
-			return string(out), nil
+			return TestValue{Value: string(out)}, nil
 		}
 	}
 
-	return "", fmt.Errorf("%w: can not infer new basic string value", ErrValuer)
+	return TestValue{}, fmt.Errorf("%w: can not infer new basic string value", ErrValuer)
 }
 
 func (v valuerString) randomString(length int) string {
@@ -191,19 +180,19 @@ func (v valuerString) randomString(length int) string {
 	return string(out)
 }
 
-func (v valuerString) json() (string, error) {
-	return fmt.Sprintf(`{"%s":"%s", "%s":"%s"}`, v.randomString(8), v.randomString(8), v.randomString(8), v.randomString(8)), nil
+func (v valuerString) json() (TestValue, error) {
+	return TestValue{Value: fmt.Sprintf(`{"%s":"%s", "%s":"%s"}`, v.randomString(8), v.randomString(8), v.randomString(8), v.randomString(8))}, nil
 }
 
-func (v valuerString) uuid() (string, error) {
-	return fmt.Sprintf("%s-%s-4%s-9%s-%s", v.randomString(8), v.randomString(4), v.randomString(3), v.randomString(3), v.randomString(12)), nil
+func (v valuerString) uuid() (TestValue, error) {
+	return TestValue{Value: fmt.Sprintf("%s-%s-4%s-9%s-%s", v.randomString(8), v.randomString(4), v.randomString(3), v.randomString(3), v.randomString(12))}, nil
 }
 
-func (v valuerString) New(prev any) (any, error) {
-	ps, ok := prev.(string)
+func (v valuerString) New(prev TestValue) (TestValue, error) {
+	ps, ok := prev.Value.(string)
 
 	if !ok {
-		return "", ErrPrevType
+		return TestValue{}, ErrPrevType
 	}
 
 	switch v.kind {
@@ -215,27 +204,11 @@ func (v valuerString) New(prev any) (any, error) {
 		return v.uuid()
 	}
 
-	return "", ErrStringKind
+	return TestValue{}, ErrStringKind
 }
 
-func (v valuerString) Zero() any {
-	return v.randomString(v.length)
-}
-
-func (v valuerString) Format(value any, typ string) (string, error) {
-	vv, ok := value.(string)
-	if !ok {
-		return "", fmt.Errorf("%w: value=%v, type=%s", ErrValueType, value, typ)
-	}
-
-	switch typ {
-	case "encoding/json.RawMessage", "[]byte":
-		return fmt.Sprintf("[]byte(`%s`)", vv), nil
-	case "sql.NullString":
-		return fmt.Sprintf("sql.NullString{Valid: true, String: \"%s\"}", vv), nil
-	default:
-		return fmt.Sprintf(`"%s"`, vv), nil
-	}
+func (v valuerString) Zero() TestValue {
+	return TestValue{Value: v.randomString(v.length)}
 }
 
 type valuerTime struct{}
@@ -244,22 +217,12 @@ func NewValuerTime() (valuerTime, error) {
 	return valuerTime{}, nil
 }
 
-func (v valuerTime) New(prev any) (any, error) {
-	return time.Now(), nil
+func (v valuerTime) New(prev TestValue) (TestValue, error) {
+	return TestValue{Value: time.Now()}, nil
 }
 
-func (v valuerTime) Zero() any {
-	return time.Now()
-}
-
-func (v valuerTime) Format(value any, typ string) (string, error) {
-	switch typ {
-	case "time.Time":
-		return "time.Now()", nil
-	case "database/sql.NullTime":
-		return "sql.NullTime{Valid: true, Time: time.Now()}", nil
-	}
-	return "", fmt.Errorf("%w: unrecognized type %s", ErrValueFormat, typ)
+func (v valuerTime) Zero() TestValue {
+	return TestValue{Value: time.Now()}
 }
 
 type valuerBoolean struct{}
@@ -268,30 +231,15 @@ func NewValuerBoolean() (valuerBoolean, error) {
 	return valuerBoolean{}, nil
 }
 
-func (v valuerBoolean) New(prev any) (any, error) {
-	p, ok := prev.(bool)
+func (v valuerBoolean) New(prev TestValue) (TestValue, error) {
+	p, ok := prev.Value.(bool)
 
 	if !ok {
-		return false, ErrPrevType
+		return TestValue{}, ErrPrevType
 	}
-	return !p, nil
+	return TestValue{Value: !p}, nil
 }
 
-func (v valuerBoolean) Zero() any {
-	return false
-}
-
-func (v valuerBoolean) Format(value any, typ string) (string, error) {
-	vv, ok := value.(bool)
-	if !ok {
-		return "", fmt.Errorf("%w: value=%v, type=%s", ErrValueType, value, typ)
-	}
-
-	switch typ {
-	case "bool":
-		return fmt.Sprintf("%t", vv), nil
-	case "database/sql.NullBool":
-		return fmt.Sprintf("sql.NullBool{Valid: true, Bool: %t}", vv), nil
-	}
-	return "", fmt.Errorf("%w: unrecognized type %s", ErrValueFormat, typ)
+func (v valuerBoolean) Zero() TestValue {
+	return TestValue{Value: false}
 }

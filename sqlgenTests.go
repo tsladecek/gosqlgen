@@ -2,6 +2,7 @@ package gosqlgen
 
 import (
 	"bytes"
+	"crypto/rand"
 	"embed"
 	"fmt"
 	"io"
@@ -9,8 +10,19 @@ import (
 	"text/template"
 )
 
-func (t *Table) testInsert(w io.Writer) error {
+type insertedValue struct {
+	column *Column
+	value  TestValue
+}
+
+type insertedTable struct {
+	varName string
+	data    []insertedValue
+}
+
+func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*insertedTable, error) {
 	d := []string{}
+	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, rand.Text()[:8]), data: make([]insertedValue, 0)}
 
 	for _, c := range t.Columns {
 		if c.ForeignKey == nil {
@@ -18,28 +30,44 @@ func (t *Table) testInsert(w io.Writer) error {
 				continue
 			}
 
-			v, err := c.TestValuer.New(c.TestValuer.Zero())
-			if err != nil {
-				return fmt.Errorf("%w: when generating new value for table=%s, column=%s", err, t.Name, c.Name)
+			prev := c.TestValuer.Zero()
+
+			if previouslyInserted != nil {
+				for _, p := range previouslyInserted.data {
+					if p.column.Name == c.Name {
+						prev = p.value
+					}
+				}
 			}
-			vf, err := c.TestValuer.Format(v, c.Type.String())
+
+			v, err := c.TestValuer.New(prev)
 			if err != nil {
-				return fmt.Errorf("%w: when formating new value %t for table=%s, column=%s", err, v, t.Name, c.Name)
+				return nil, fmt.Errorf("%w: when generating new value for table=%s, column=%s", err, t.Name, c.Name)
+			}
+
+			vf, err := v.Format(c.Type)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when formating new value %t for table=%s, column=%s", err, v, t.Name, c.Name)
 			}
 			d = append(d, fmt.Sprintf("%s: %s", c.FieldName, vf))
+
+			it.data = append(it.data, insertedValue{column: c, value: v})
 			continue
 		}
 
-		c.ForeignKey.Table.testInsert(w)
-		d = append(d, fmt.Sprintf("%s: tbl_%s.%s", c.FieldName, c.ForeignKey.Table.Name, c.ForeignKey.FieldName))
+		insertedChild, err := c.ForeignKey.Table.testInsert(w, nil)
+		if err != nil {
+			return nil, fmt.Errorf("%w: when inserting child based on FK for table=%s, column=%s", err, t.Name, c.Name)
+		}
+		d = append(d, fmt.Sprintf("%s: %s.%s", c.FieldName, insertedChild.varName, c.ForeignKey.FieldName))
 	}
 
-	fmt.Fprintf(w, `tbl_%s := %s{%s}
-		err = tbl_%s.insert(ctx, testDb)
+	fmt.Fprintf(w, `%s := %s{%s}
+		err = %s.insert(ctx, testDb)
 		require.NoError(t, err)
-		`, t.Name, t.StructName, strings.Join(d, ", "), t.Name)
+		`, it.varName, t.StructName, strings.Join(d, ", "), it.varName)
 
-	return nil
+	return it, nil
 }
 
 type testSuite struct {
@@ -59,9 +87,29 @@ func NewTestSuite() (testSuite, error) {
 	return testSuite{testTemplate: tmpl}, nil
 }
 
-type updatetableColumn struct {
-	FieldName string
-	NewValue  any
+func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, error) {
+	res := []string{}
+	newInserted := &insertedTable{varName: previouslyInserted.varName, data: make([]insertedValue, 0)}
+	for _, v := range previouslyInserted.data {
+		if v.column.PrimaryKey || v.column.BusinessKey || v.column.SoftDelete || v.column.ForeignKey != nil {
+			continue
+		}
+
+		newValue, err := v.column.TestValuer.New(v.value)
+		if err != nil {
+			return "", nil, fmt.Errorf("%w: when infering new value for table=%s, column=%s for test update method", err, v.column.Table.Name, v.column.Name)
+		}
+
+		newValueFormatted, err := newValue.Format(v.column.Type)
+		if err != nil {
+			return "", nil, fmt.Errorf("%w: when formatting new value for table=%s, column=%s for test update method", err, v.column.Table.Name, v.column.Name)
+		}
+
+		res = append(res, fmt.Sprintf("%s.%s = %s", previouslyInserted.varName, v.column.FieldName, newValueFormatted))
+		newInserted.data = append(newInserted.data, insertedValue{column: v.column, value: newValue})
+	}
+
+	return strings.Join(res, "\n"), newInserted, nil
 }
 
 func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
@@ -70,28 +118,35 @@ func (ts testSuite) Generate(w io.Writer, driver Driver, table *Table) error {
 		return fmt.Errorf("%w: could not parse primary and business keys from table", err)
 	}
 
-	updateableColumnspk := make([]updatetableColumn, 0)
-	updateableColumnsbk := make([]updatetableColumn, 0)
+	var inserts bytes.Buffer
+	insertedData, err := table.testInsert(&inserts, nil)
+	if err != nil {
+		return fmt.Errorf("%w: when creating test inserts", err)
+	}
+
+	updatesPk, insertedData, err := updatedValues(insertedData)
+	if err != nil {
+		return fmt.Errorf("%w: when creating update template for pks", err)
+	}
+	updatesBk, insertedData, err := updatedValues(insertedData)
+	if err != nil {
+		return fmt.Errorf("%w: when creating update template for pks", err)
+	}
+
+	_ = insertedData
 
 	data := make(map[string]any)
+	data["Inserts"] = inserts.String()
 	data["StructName"] = table.StructName
 	data["MethodGetByPrimaryKeys"] = MethodGetByPrimaryKeys
 	data["MethodGetByBusinessKeys"] = MethodGetByBusinessKeys
 	data["PrimaryKeys"] = pk
 	data["BusinessKeys"] = bk
-	data["TableVarName"] = fmt.Sprintf("tbl_%s", table.Name)
-	data["UpdateableColumnsPK"] = updateableColumnspk
-	data["UpdateableColumnsBK"] = updateableColumnsbk
+	data["TableVarName"] = insertedData.varName
+	data["UpdatesPK"] = updatesPk
+	data["UpdatesBK"] = updatesBk
 	data["MethodUpdateByPrimaryKeys"] = MethodUpdateByPrimaryKeys
 	data["MethodUpdateByBusinessKeys"] = MethodUpdateByBusinessKeys
-
-	var inserts bytes.Buffer
-	err = table.testInsert(&inserts)
-	if err != nil {
-		return fmt.Errorf("%w: when creating test inserts", err)
-	}
-
-	data["Inserts"] = inserts.String()
 
 	ts.testTemplate.ExecuteTemplate(w, "main", data)
 	return nil
