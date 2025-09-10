@@ -45,11 +45,11 @@ func TestValuerNumericNew(t *testing.T) {
 	cases := []struct {
 		name   string
 		valuer valuerNumeric
-		prev   any
+		prev   TestValue
 	}{
-		{name: "int", valuer: valuerNumeric{max: 32}, prev: 2},
-		{name: "binary integer", valuer: valuerNumeric{max: 1}, prev: 0},
-		{name: "float", valuer: valuerNumeric{min: 0.05, max: 0.1, isFloat: true}, prev: 0.75},
+		{name: "int", valuer: valuerNumeric{max: 32}, prev: TestValue{Value: 2}},
+		{name: "binary integer", valuer: valuerNumeric{max: 1}, prev: TestValue{Value: 0}},
+		{name: "float", valuer: valuerNumeric{min: 0.05, max: 0.1, isFloat: true}, prev: TestValue{Value: 0.75}},
 	}
 
 	for _, tt := range cases {

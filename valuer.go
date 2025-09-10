@@ -3,7 +3,6 @@ package gosqlgen
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"slices"
 	"time"
 )
@@ -47,7 +46,7 @@ func NewValuerNumeric(minValue, maxValue float64, isFloat bool) (valuerNumeric, 
 	return valuerNumeric{max: maxValue, min: minValue, isFloat: isFloat}, nil
 }
 
-func (v valuerNumeric) randomInt(prev int) (int, error) {
+func (v valuerNumeric) otherInt(prev int) (int, error) {
 	maxInt := int(v.max)
 	minInt := int(v.min)
 
@@ -62,7 +61,7 @@ func (v valuerNumeric) randomInt(prev int) (int, error) {
 	return minInt, nil
 }
 
-func (v valuerNumeric) randomFloat(prev float64) (float64, error) {
+func (v valuerNumeric) otherFloat(prev float64) (float64, error) {
 	step := (v.max - v.min) / 10
 
 	if prev == v.max {
@@ -81,7 +80,7 @@ func (v valuerNumeric) New(prev TestValue) (TestValue, error) {
 		if !ok {
 			return TestValue{}, fmt.Errorf("%w: previous value not an int", ErrValuer)
 		}
-		iv, err := v.randomInt(p)
+		iv, err := v.otherInt(p)
 		if err != nil {
 			return TestValue{}, fmt.Errorf("%w: when generating new integer value", ErrValuer)
 		}
@@ -93,7 +92,7 @@ func (v valuerNumeric) New(prev TestValue) (TestValue, error) {
 	if !ok {
 		return TestValue{}, fmt.Errorf("%w: previous value not a float", ErrValuer)
 	}
-	fv, err := v.randomFloat(p)
+	fv, err := v.otherFloat(p)
 	if err != nil {
 		return TestValue{}, fmt.Errorf("%w: when generating new integer value", ErrValuer)
 	}
@@ -152,12 +151,7 @@ func (v valuerString) basic(prev string) (TestValue, error) {
 	}
 
 	if prev == "" {
-		out := make([]rune, v.length)
-		for i := range v.length {
-			out[i] = v.charSet[rand.Intn(len(v.charSet))]
-		}
-
-		return TestValue{Value: string(out)}, nil
+		return TestValue{Value: v.randomString(v.length)}, nil
 	}
 
 	for _, c := range v.charSet {
@@ -172,12 +166,7 @@ func (v valuerString) basic(prev string) (TestValue, error) {
 }
 
 func (v valuerString) randomString(length int) string {
-	out := make([]rune, length)
-	for i := range length {
-		out[i] = v.charSet[rand.Intn(len(v.charSet))]
-	}
-
-	return string(out)
+	return RandomString(length, v.charSet)
 }
 
 func (v valuerString) json() (TestValue, error) {

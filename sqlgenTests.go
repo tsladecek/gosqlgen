@@ -2,7 +2,6 @@ package gosqlgen
 
 import (
 	"bytes"
-	"crypto/rand"
 	"embed"
 	"fmt"
 	"io"
@@ -22,7 +21,7 @@ type insertedTable struct {
 
 func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*insertedTable, error) {
 	d := []string{}
-	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, rand.Text()[:8]), data: make([]insertedValue, 0)}
+	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, RandomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0)}
 
 	for _, c := range t.Columns {
 		if c.ForeignKey == nil {
