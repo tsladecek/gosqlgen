@@ -240,48 +240,72 @@ func tagEquals(tag string, value Flag) bool {
 	return strings.EqualFold(strings.TrimSpace(tag), string(value))
 }
 
-func tagListContent(tag string) ([]string, error) {
-	fields := strings.Split(tag, " ")
-	if len(fields) < 2 {
-		return nil, fmt.Errorf("%w: number of items in tag is less than two", ErrFlagFieldNumber)
+func tagFields(tag string) []string {
+	fields := []string{}
+	for _, c := range strings.Split(strings.TrimSpace(tag), " ") {
+		c = strings.TrimSpace(c)
+		if c == "" {
+			continue
+		}
+
+		fields = append(fields, c)
 	}
 
-	content := strings.Join(fields[1:], " ")
-
-	if !strings.HasPrefix(content, "(") || !strings.HasSuffix(content, ")") {
-		return nil, fmt.Errorf("%w: tag content %s is not surrounded by parentheses", ErrFlagFormat, content)
-	}
-	res := []string{}
-
-	for s := range strings.SplitSeq(strings.TrimSuffix(strings.TrimPrefix(fields[1], "("), ")"), ",") {
-		res = append(res, strings.TrimSpace(s))
-	}
-
-	return res, nil
+	return fields
 }
 
+// tagListContent extracts the content inside parentheses and
+// returns it as a slice of strings. It is space agnostic. The function
+// does not check the position of the content inside the tag
+func tagListContent(tag string) ([]string, error) {
+	fields := tagFields(tag)
+
+	if strings.HasPrefix(fields[0], "(") {
+		return nil, fmt.Errorf("%w: tag can not start with parenthesis", ErrFlagFormat)
+	}
+
+	tagContent := strings.Join(fields[1:], "")
+
+	if !strings.HasPrefix(tagContent, "(") || !strings.HasSuffix(tagContent, ")") {
+		return nil, fmt.Errorf("%w: tag must be surrounded with parenthesis", ErrFlagFormat)
+	}
+
+	content := []string{}
+	for _, s := range strings.Split(strings.TrimPrefix(strings.TrimSuffix(tagContent, ")"), "("), ",") {
+		if slices.Contains(content, s) {
+			continue
+		}
+
+		content = append(content, s)
+	}
+
+	return content, nil
+}
+
+// tagInt extracts integer from the second position in the space delimited tag fields
 func tagInt(tag string) (int, error) {
-	fields := strings.Split(tag, " ")
+	fields := tagFields(tag)
 	if len(fields) != 2 {
-		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber, fields)
 	}
 	n, err := strconv.Atoi(fields[1])
 
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%w: failed to convert to integer", ErrFlagFormat)
 	}
 	return n, nil
 }
 
+// tagFloat extracts float from the second position in the space delimited tag fields
 func tagFloat(tag string) (float64, error) {
-	fields := strings.Split(tag, " ")
+	fields := tagFields(tag)
 	if len(fields) != 2 {
 		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
 	}
 	n, err := strconv.ParseFloat(fields[1], 64)
 
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%w: failed to convert to float", ErrFlagFormat)
 	}
 	return n, nil
 }
@@ -584,7 +608,6 @@ MainLoop:
 
 			err := table.ParseTableName(genDecl.Doc)
 			if errors.Is(err, ErrNoTableTag) {
-				fmt.Printf("Skipped struct %s, no parseable table definition found. If this is an error, please add it in the comment above the type\n", table.StructName)
 				continue MainLoop
 			}
 

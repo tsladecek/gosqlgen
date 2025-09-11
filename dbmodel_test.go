@@ -469,21 +469,76 @@ func TestTagListContent(t *testing.T) {
 		expectedErr error
 	}{
 		{name: "valid", tag: "tag (val1,val2)", values: []string{"val1", "val2"}},
+		{name: "invalid bad position", tag: "tag tag (val1,val2) tag tag", expectedErr: ErrFlagFormat},
 		{name: "valid padded", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
 		{name: "valid padded deduplicated", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
 		{name: "valid single char padded deduplicated", tag: "  tag   ( a , a , b )  ", values: []string{"a", "b"}},
+		{name: "invalid missing start paren", tag: "tag a,b)", expectedErr: ErrFlagFormat},
+		{name: "invalid missing end paren", tag: "tag (a,b", expectedErr: ErrFlagFormat},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			content, err := tagListContent(tt.tag)
-			require.Equal(t, tt.expectedErr == nil, err == nil)
-
-			if err != nil {
+			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr)
 			} else {
+				require.NoError(t, err)
 				assert.EqualValues(t, tt.values, content)
 			}
 		})
 	}
+}
+
+func TestTagInt(t *testing.T) {
+	cases := []struct {
+		name        string
+		tag         string
+		value       int
+		expectedErr error
+	}{
+		{name: "valid", tag: "tag 123", value: 123},
+		{name: "valid padded", tag: "  tag   123", value: 123},
+		{name: "invalid not an int", tag: "tag 123s", expectedErr: ErrFlagFormat},
+		{name: "invalid not an int", tag: "tag 123.123", expectedErr: ErrFlagFormat},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tagInt(tt.tag)
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.value, value)
+			}
+		})
+	}
+}
+
+func TestTagFloat(t *testing.T) {
+	cases := []struct {
+		name        string
+		tag         string
+		value       float64
+		expectedErr error
+	}{
+		{name: "valid", tag: "tag 1.23", value: 1.23},
+		{name: "valid padded", tag: "  tag   1.23", value: 1.23},
+		{name: "invalid not a float", tag: "tag 1.23s", expectedErr: ErrFlagFormat},
+		{name: "valid int", tag: "tag 123", value: 123},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tagFloat(tt.tag)
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.value, value)
+			}
+		})
+	}
+
 }
