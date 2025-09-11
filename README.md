@@ -11,14 +11,14 @@ Table definition is expected as a comment of the struct type in following format
 
 `gosqlgen:table_name: REQUIRED[FLAGS]`
 
-Where FLAGS are semicolon separated modifiers. Supported are:
+Where FLAGS are **semicolon** separated modifiers. Supported are:
 - `skip tests` - tests will be skipped for this table
 
 ### Column
 Column definition is expected as a field tag (similar to json tag) in following format:
 
-`gosqlgen:"column_name: REQUIRED;sql_type:REQUIRED[FLAGS]"`
-Where FLAGS are semicolon separated modifiers. Supported are:
+`gosqlgen:"column_name: REQUIRED[FLAGS]"`
+Where FLAGS are **semicolon** separated modifiers. Supported are:
 
 **Column constraint flags**
 - `pk` - primary key
@@ -45,12 +45,22 @@ Given following table spec:
 //go:generate go run cmd/main.go -driver gosqldriver_mysql -out generatedMethods.go -outTest generatedMethods_test.go
 package dbrepo
 
+type Continent string
+
+const (
+	ContinentEurope = "Europe"
+	ContinentAsia = "Asia"
+	ContinentAfrica = "Africa"
+)
+
 
 // gosqlgen: users
 type User struct {
 	RawId int    `gosqlgen:"_id;pk ai"`
 	Id    string `gosqlgen:"id;bk"`
 	Name  string `gosqlgen:"name;length 64"`
+	BirthContinent Continent `gosqlgen:"birth_continent;valueset (Asia, Europe, Africa)"`
+	
 }
 
 // gosqlgen: addresses
