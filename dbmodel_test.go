@@ -232,6 +232,77 @@ func TestReconcileRelationships(t *testing.T) {
 	})
 }
 
+type customTestType struct {
+	stringReturn string
+}
+
+func (t customTestType) Underlying() types.Type {
+	return customTestType{stringReturn: t.stringReturn}
+}
+func (t customTestType) String() string {
+	return t.stringReturn
+}
+
+func TestColumnInferTestValuer(t *testing.T) {
+	defaultCharSet := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	defaultStringLength := 32
+	defaultMax := float64(32)
+
+	cases := []struct {
+		name               string
+		column             *Column
+		expectedTestValuer TestValuer
+		expectedErr        error
+	}{
+		{name: "string - json from type", column: &Column{Type: customTestType{stringReturn: "encoding/json.RawMessage"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindJSON, charSet: defaultCharSet}},
+		{name: "string - json from flag", column: &Column{Type: types.Typ[types.String], isJSON: true}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindJSON, charSet: defaultCharSet}},
+		{name: "string - uuid", column: &Column{Type: types.Typ[types.String], isUUID: true}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindUUID, charSet: defaultCharSet}},
+		{name: "string - json has precedence over uuid", column: &Column{Type: types.Typ[types.String], isUUID: true, isJSON: true}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindJSON, charSet: defaultCharSet}},
+		{name: "string - string", column: &Column{Type: types.Typ[types.String]}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - []byte", column: &Column{Type: customTestType{stringReturn: "[]byte"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - byte", column: &Column{Type: customTestType{stringReturn: "byte"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - rune", column: &Column{Type: customTestType{stringReturn: "rune"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - sql.NullString", column: &Column{Type: customTestType{stringReturn: "database/sql.NullString"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - sql.NullByte", column: &Column{Type: customTestType{stringReturn: "database/sql.NullByte"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+
+		{name: "string - string, charset", column: &Column{Type: types.Typ[types.String], charSet: []rune("abcd")}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: []rune("abcd")}},
+		{name: "string - string, valueset", column: &Column{Type: types.Typ[types.String], valueSet: []string{"abcd", "efgh"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet, valueSet: []string{"abcd", "efgh"}}},
+
+		{name: "numeric - integer - int", column: &Column{Type: types.Typ[types.Int]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int8", column: &Column{Type: types.Typ[types.Int8]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int16", column: &Column{Type: types.Typ[types.Int16]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int32", column: &Column{Type: types.Typ[types.Int32]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int64", column: &Column{Type: types.Typ[types.Int64]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - sql.NullInt16", column: &Column{Type: customTestType{stringReturn: "database/sql.NullInt16"}}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - sql.NullInt32", column: &Column{Type: customTestType{stringReturn: "database/sql.NullInt32"}}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - sql.NullInt64", column: &Column{Type: customTestType{stringReturn: "database/sql.NullInt64"}}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - min, max", column: &Column{Type: types.Typ[types.Int], min: 6, max: 16}, expectedTestValuer: valuerNumeric{max: 16, min: 6}},
+		{name: "numeric - float - float32", column: &Column{Type: types.Typ[types.Float32]}, expectedTestValuer: valuerNumeric{max: defaultMax, isFloat: true}},
+		{name: "numeric - float - float64", column: &Column{Type: types.Typ[types.Float64]}, expectedTestValuer: valuerNumeric{max: defaultMax, isFloat: true}},
+		{name: "numeric - float - sql.NullFloat64", column: &Column{Type: customTestType{stringReturn: "database/sql.NullFloat64"}}, expectedTestValuer: valuerNumeric{max: defaultMax, isFloat: true}},
+
+		{name: "time - time.Time", column: &Column{Type: customTestType{stringReturn: "time.Time"}}, expectedTestValuer: valuerTime{}},
+		{name: "time - sql.NullTime", column: &Column{Type: customTestType{stringReturn: "database/sql.NullTime"}}, expectedTestValuer: valuerTime{}},
+
+		{name: "boolean - bool", column: &Column{Type: types.Typ[types.Bool]}, expectedTestValuer: valuerBoolean{}},
+		{name: "boolean - sql.NullBool", column: &Column{Type: customTestType{stringReturn: "database/sql.NullBool"}}, expectedTestValuer: valuerBoolean{}},
+
+		{name: "unsupported type", column: &Column{Type: customTestType{stringReturn: "unsupported type"}}, expectedErr: ErrUnsuportedType},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.column.inferTestValuer()
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedTestValuer, tt.column.TestValuer)
+			}
+		})
+	}
+}
+
 func TestNewDBModel_HappyPath(t *testing.T) {
 	content, err := format.Source([]byte(strings.Join([]string{
 		"package main",

@@ -19,7 +19,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c", Name: []byte(`ax9oly0QA1aLUYnrgpudCjDJAMhprBJd`), payload: []byte(`{"YIXHmd12":"HEI9XuVX", "JN2lXK1O":"F8FZ1boN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c", Name: []byte(`ax9oly0QA1aLUYnrgpudCjDJAMhprBJd`), payload: []byte(`{"YIXHmd12":"HEI9XuVX", "JN2lXK1O":"F8FZ1boN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_afhjdbje.insert(ctx, testDb)
 		require.NoError(t, err)
 		tbl_countries_ediaegab := Country{RawId: 1, Id: "aVvX1OIKgtQoBUjybDNN68HQ3TVewUnt", Name: "a8VYIilMjgTMbgFix5wcHvmxrIy07STJ", GPS: "azawZmWmh5BZKnZXhpDjaYIzKulGlvts", Continent: "Asia"}
@@ -45,7 +45,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c", Name: []byte(`ax9oly0QA1aLUYnrgpudCjDJAMhprBJd`), payload: []byte(`{"YIXHmd12":"HEI9XuVX", "JN2lXK1O":"F8FZ1boN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c", Name: []byte(`ax9oly0QA1aLUYnrgpudCjDJAMhprBJd`), payload: []byte(`{"YIXHmd12":"HEI9XuVX", "JN2lXK1O":"F8FZ1boN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_afhjdbje.insert(ctx, testDb)
 		require.NoError(t, err)
 		tbl_countries_ediaegab := Country{RawId: 1, Id: "aVvX1OIKgtQoBUjybDNN68HQ3TVewUnt", Name: "a8VYIilMjgTMbgFix5wcHvmxrIy07STJ", GPS: "azawZmWmh5BZKnZXhpDjaYIzKulGlvts", Continent: "Asia"}
@@ -77,7 +77,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c", Name: []byte(`ax9oly0QA1aLUYnrgpudCjDJAMhprBJd`), payload: []byte(`{"YIXHmd12":"HEI9XuVX", "JN2lXK1O":"F8FZ1boN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c", Name: []byte(`ax9oly0QA1aLUYnrgpudCjDJAMhprBJd`), payload: []byte(`{"YIXHmd12":"HEI9XuVX", "JN2lXK1O":"F8FZ1boN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_afhjdbje.insert(ctx, testDb)
 		require.NoError(t, err)
 		tbl_countries_ediaegab := Country{RawId: 1, Id: "aVvX1OIKgtQoBUjybDNN68HQ3TVewUnt", Name: "a8VYIilMjgTMbgFix5wcHvmxrIy07STJ", GPS: "azawZmWmh5BZKnZXhpDjaYIzKulGlvts", Continent: "Asia"}
@@ -106,7 +106,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_users_kbkafhch := User{RawId: 1, Id: "aG0Uq", Name: []byte(`aiuh7Q3Q5yCKhfxgwoEBSG0zy3ztBtbf`), payload: []byte(`{"ZrTrrstG":"9ys8nVup", "FAigTLTi":"VtyV7tRL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_kbkafhch := User{RawId: 1, Id: "aG0Uq", Name: []byte(`aiuh7Q3Q5yCKhfxgwoEBSG0zy3ztBtbf`), payload: []byte(`{"ZrTrrstG":"9ys8nVup", "FAigTLTi":"VtyV7tRL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_kbkafhch.insert(ctx, testDb)
 		require.NoError(t, err)
 		tbl_countries_kdckklld := Country{RawId: 1, Id: "auLIEDZodKLKQDL3egctszYq10dhIaOw", Name: "a0Rxuy1ORqPSkH7xpISdeQifrDYBS5pD", GPS: "awcRUCm4IKRg6wJ2G3Pecdbq0RfaWswg", Continent: "Asia"}
@@ -135,7 +135,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_users_kbkafhch := User{RawId: 1, Id: "aG0Uq", Name: []byte(`aiuh7Q3Q5yCKhfxgwoEBSG0zy3ztBtbf`), payload: []byte(`{"ZrTrrstG":"9ys8nVup", "FAigTLTi":"VtyV7tRL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_kbkafhch := User{RawId: 1, Id: "aG0Uq", Name: []byte(`aiuh7Q3Q5yCKhfxgwoEBSG0zy3ztBtbf`), payload: []byte(`{"ZrTrrstG":"9ys8nVup", "FAigTLTi":"VtyV7tRL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_kbkafhch.insert(ctx, testDb)
 		require.NoError(t, err)
 		tbl_countries_kdckklld := Country{RawId: 1, Id: "auLIEDZodKLKQDL3egctszYq10dhIaOw", Name: "a0Rxuy1ORqPSkH7xpISdeQifrDYBS5pD", GPS: "awcRUCm4IKRg6wJ2G3Pecdbq0RfaWswg", Continent: "Asia"}
@@ -170,7 +170,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_users_kbkafhch := User{RawId: 1, Id: "aG0Uq", Name: []byte(`aiuh7Q3Q5yCKhfxgwoEBSG0zy3ztBtbf`), payload: []byte(`{"ZrTrrstG":"9ys8nVup", "FAigTLTi":"VtyV7tRL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_kbkafhch := User{RawId: 1, Id: "aG0Uq", Name: []byte(`aiuh7Q3Q5yCKhfxgwoEBSG0zy3ztBtbf`), payload: []byte(`{"ZrTrrstG":"9ys8nVup", "FAigTLTi":"VtyV7tRL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_kbkafhch.insert(ctx, testDb)
 		require.NoError(t, err)
 		tbl_countries_kdckklld := Country{RawId: 1, Id: "auLIEDZodKLKQDL3egctszYq10dhIaOw", Name: "a0Rxuy1ORqPSkH7xpISdeQifrDYBS5pD", GPS: "awcRUCm4IKRg6wJ2G3Pecdbq0RfaWswg", Continent: "Asia"}
@@ -276,7 +276,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_users_abebbkfj := User{RawId: 1, Id: "a6ntr", Name: []byte(`aYHBwNHwFaUcQogb3y5Uao9EKF9GehpW`), payload: []byte(`{"qOFl1kVz":"LVHXmSje", "tJDK0AMF":"q2Mpxdhn"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_abebbkfj := User{RawId: 1, Id: "a6ntr", Name: []byte(`aYHBwNHwFaUcQogb3y5Uao9EKF9GehpW`), payload: []byte(`{"qOFl1kVz":"LVHXmSje", "tJDK0AMF":"q2Mpxdhn"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_abebbkfj.insert(ctx, testDb)
 		require.NoError(t, err)
 
@@ -296,7 +296,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_users_abebbkfj := User{RawId: 1, Id: "a6ntr", Name: []byte(`aYHBwNHwFaUcQogb3y5Uao9EKF9GehpW`), payload: []byte(`{"qOFl1kVz":"LVHXmSje", "tJDK0AMF":"q2Mpxdhn"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_abebbkfj := User{RawId: 1, Id: "a6ntr", Name: []byte(`aYHBwNHwFaUcQogb3y5Uao9EKF9GehpW`), payload: []byte(`{"qOFl1kVz":"LVHXmSje", "tJDK0AMF":"q2Mpxdhn"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_abebbkfj.insert(ctx, testDb)
 		require.NoError(t, err)
 
@@ -305,6 +305,7 @@ func TestGoSQLGen_User(t *testing.T) {
 		tbl_users_abebbkfj.Age = sql.NullInt32{Valid: true, Int32: 0}
 		tbl_users_abebbkfj.DrivesCar = sql.NullBool{Valid: true, Bool: false}
 		tbl_users_abebbkfj.Birthday = sql.NullTime{Valid: true, Time: time.Now()}
+		tbl_users_abebbkfj.Registered = time.Now()
 		err = tbl_users_abebbkfj.updateByPrimaryKeys(ctx, testDb)
 		require.NoError(t, err)
 
@@ -320,6 +321,7 @@ func TestGoSQLGen_User(t *testing.T) {
 		tbl_users_abebbkfj.Age = sql.NullInt32{Valid: true, Int32: 1}
 		tbl_users_abebbkfj.DrivesCar = sql.NullBool{Valid: true, Bool: true}
 		tbl_users_abebbkfj.Birthday = sql.NullTime{Valid: true, Time: time.Now()}
+		tbl_users_abebbkfj.Registered = time.Now()
 		err = tbl_users_abebbkfj.updateByBusinessKeys(ctx, testDb)
 		require.NoError(t, err)
 
@@ -331,7 +333,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_users_abebbkfj := User{RawId: 1, Id: "a6ntr", Name: []byte(`aYHBwNHwFaUcQogb3y5Uao9EKF9GehpW`), payload: []byte(`{"qOFl1kVz":"LVHXmSje", "tJDK0AMF":"q2Mpxdhn"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}}
+		tbl_users_abebbkfj := User{RawId: 1, Id: "a6ntr", Name: []byte(`aYHBwNHwFaUcQogb3y5Uao9EKF9GehpW`), payload: []byte(`{"qOFl1kVz":"LVHXmSje", "tJDK0AMF":"q2Mpxdhn"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now()}, Registered: time.Now()}
 		err = tbl_users_abebbkfj.insert(ctx, testDb)
 		require.NoError(t, err)
 

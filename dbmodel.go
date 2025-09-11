@@ -35,7 +35,7 @@ var (
 	StringTypesAll  = slices.Concat(StringTypes, StringTypesNull)
 	StringTypeJSON  = []string{"encoding/json.RawMessage"}
 
-	TimeTypes     = []string{"time/Time"}
+	TimeTypes     = []string{"time.Time"}
 	TimeTypesNull = []string{"database/sql.NullTime"}
 	TimeTypesAll  = slices.Concat(TimeTypes, TimeTypesNull)
 
@@ -168,7 +168,8 @@ var (
 
 	ErrNoColumnTag = errors.New("no column tag found")
 
-	ErrNoPrimaryKey = errors.New("no primary key found for table")
+	ErrNoPrimaryKey   = errors.New("no primary key found for table")
+	ErrUnsuportedType = errors.New("unsuported type")
 )
 
 func (d DBModel) Debug() {
@@ -286,7 +287,7 @@ func tagListContent(tag string) ([]string, error) {
 func tagInt(tag string) (int, error) {
 	fields := tagFields(tag)
 	if len(fields) != 2 {
-		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber, fields)
+		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
 	}
 	n, err := strconv.Atoi(fields[1])
 
@@ -568,7 +569,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 	}
 
-	return fmt.Errorf("unsupported type")
+	return fmt.Errorf("%w: type=%s", ErrUnsuportedType, c.Type.String())
 }
 
 // NewDBModel parses the File and constructs the entire DBModel.
