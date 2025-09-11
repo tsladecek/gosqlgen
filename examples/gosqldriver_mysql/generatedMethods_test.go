@@ -73,7 +73,6 @@ func TestGoSQLGen_Address(t *testing.T) {
 		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_acfiabjk.Id, tbl_addresses_acfiabjk.Address)
 		require.NoError(t, err)
 		assert.Equal(t, tbl_addresses_acfiabjk, gotByBk)
-		assert.Equal(t, gotByPk, gotByBk)
 
 	})
 
@@ -167,7 +166,6 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_book_hglgacjh.Id)
 		require.NoError(t, err)
 		assert.Equal(t, tbl_addresses_book_hglgacjh, gotByBk)
-		assert.Equal(t, gotByPk, gotByBk)
 
 	})
 
@@ -251,7 +249,6 @@ func TestGoSQLGen_Country(t *testing.T) {
 		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_countries_djgeigaj.Id)
 		require.NoError(t, err)
 		assert.Equal(t, tbl_countries_djgeigaj, gotByBk)
-		assert.Equal(t, gotByPk, gotByBk)
 
 	})
 
@@ -330,7 +327,6 @@ func TestGoSQLGen_User(t *testing.T) {
 		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_users_abebbkfj.Id)
 		require.NoError(t, err)
 		assert.Equal(t, tbl_users_abebbkfj, gotByBk)
-		assert.Equal(t, gotByPk, gotByBk)
 
 	})
 

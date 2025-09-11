@@ -238,8 +238,8 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		"import \"database/sql\"",
 		"// gosqlgen: table1; skip tests",
 		"type Table1 struct {",
-		"Id int `gosqlgen:\"id;pk;ai\"`",
-		"Name string `gosqlgen:\"name; bk\"`",
+		"Id int `gosqlgen:\"id;pk;ai;max 16\"`",
+		"Name string `gosqlgen:\"name; bk; length 8; charset (a,b,c,d)\"`",
 		"deleted_at sql.NullTime `gosqlgen:\"deleted_at;sd\"`",
 		"}",
 		"// gosqlgen: table2",
@@ -282,19 +282,20 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		compFunc(t, expected.SoftDelete, tested.SoftDelete)
 		compFunc(t, expected.BusinessKey, tested.BusinessKey)
 		compFunc(t, expected.AutoIncrement, tested.AutoIncrement)
+		compFunc(t, expected.TestValuer, tested.TestValuer)
 	}
 
 	// Table: table1, Column: id
 	id, err := t1.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id)
-	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t1, Type: types.Typ[types.Int], TestValuer: valuerNumeric{}}, *id)
+	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t1, Type: types.Typ[types.Int], TestValuer: valuerNumeric{max: 16}}, *id)
 
 	// Table: table1, Column: name
 	name, err := t1.GetColumn("name")
 	require.NoError(t, err)
 	require.NotNil(t, name)
-	columnCompare(true, "string", Column{Name: "name", FieldName: "Name", BusinessKey: true, Table: t1, Type: types.Typ[types.String]}, *name)
+	columnCompare(true, "string", Column{Name: "name", FieldName: "Name", BusinessKey: true, Table: t1, Type: types.Typ[types.String], TestValuer: valuerString{length: 8, charSet: []rune("abcd"), kind: stringKindBasic}}, *name)
 
 	// Table: table1, Column: name
 	deletedAt, err := t1.GetColumn("deleted_at")
@@ -302,7 +303,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	require.NotNil(t, deletedAt)
 
 	assert.Equal(t, "database/sql.NullTime", deletedAt.Type.String())
-	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SoftDelete: true, Table: t1}, *deletedAt)
+	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SoftDelete: true, Table: t1, TestValuer: valuerTime{}}, *deletedAt)
 
 	assert.Equal(t, "table2", t2.Name)
 	assert.False(t, t2.SkipTests)
@@ -311,12 +312,12 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	id2, err := t2.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id2)
-	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t2, Type: types.Typ[types.Int]}, *id2)
+	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t2, Type: types.Typ[types.Int], TestValuer: valuerNumeric{max: 32}}, *id2)
 
 	table1Id, err := t2.GetColumn("table1_id")
 	require.NoError(t, err)
 	require.NotNil(t, table1Id)
-	columnCompare(true, "int", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
+	columnCompare(true, "int", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, Table: t2, Type: types.Typ[types.Int], fk: "table1.id", TestValuer: valuerNumeric{max: 32}}, *table1Id)
 }
 
 func TestNewDBModel_SadPath(t *testing.T) {
@@ -455,6 +456,33 @@ func TestTablePkAndBk(t *testing.T) {
 				}
 			} else {
 				assert.ErrorIs(t, err, tt.expectedError)
+			}
+		})
+	}
+}
+
+func TestTagListContent(t *testing.T) {
+	cases := []struct {
+		name        string
+		tag         string
+		values      []string
+		expectedErr error
+	}{
+		{name: "valid", tag: "tag (val1,val2)", values: []string{"val1", "val2"}},
+		{name: "valid padded", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
+		{name: "valid padded deduplicated", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
+		{name: "valid single char padded deduplicated", tag: "  tag   ( a , a , b )  ", values: []string{"a", "b"}},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			content, err := tagListContent(tt.tag)
+			require.Equal(t, tt.expectedErr == nil, err == nil)
+
+			if err != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				assert.EqualValues(t, tt.values, content)
 			}
 		})
 	}

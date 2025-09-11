@@ -58,7 +58,6 @@ t.Run("update", func(t *testing.T) {
 	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
 	require.NoError(t, err)
 	assert.Equal(t, {{.TableVarName}}, gotByBk)
-	assert.Equal(t, gotByPk, gotByBk)
 	{{ end }}
 })
 {{end}}

@@ -44,14 +44,22 @@ var (
 	BooleanTypesAll  = slices.Concat(BooleanTypes, BooleanTypesNull)
 )
 
+func IsOneOfTypes(typ types.Type, options []string) bool {
+	// Each type T has an underlying type: If T is one of the predeclared boolean, numeric, or string types, or a type literal, the corresponding underlying type is T itself. Otherwise, T's underlying type is the underlying type of the type to which T refers in its declaration.
+	t := typ.String()
+	u := typ.Underlying().String()
+
+	return slices.Contains(options, t) || slices.Contains(options, u)
+}
+
 func (tv TestValue) Format(columnType types.Type) (string, error) {
 	t := columnType.String()
 	u := columnType.Underlying().String()
 
-	if slices.Contains(NumericTypesAll, t) || slices.Contains(NumericTypesAll, u) {
+	if IsOneOfTypes(columnType, NumericTypesAll) {
 		switch {
 		// Numeric
-		case slices.Contains(NumericTypes, t) || slices.Contains(NumericTypes, u):
+		case IsOneOfTypes(columnType, NumericTypes):
 			return fmt.Sprintf("%v", tv.Value), nil
 		case t == "database/sql.NullInt16" || u == "database/sql.NullInt16":
 			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", tv.Value), nil
@@ -62,7 +70,7 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 		case t == "database/sql.NullFloat64" || u == "database/sql.NullFloat64":
 			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %d}", tv.Value), nil
 		}
-	} else if slices.Contains(StringTypesAll, t) || slices.Contains(StringTypesAll, u) {
+	} else if IsOneOfTypes(columnType, StringTypesAll) {
 		switch {
 		case t == "string" || u == "string":
 			return fmt.Sprintf(`"%s"`, tv.Value), nil
@@ -77,14 +85,14 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 		case t == "sql.NullByte":
 			return fmt.Sprintf("sql.NullByte{Valid: true, Byte: byte('%s')}", tv.Value), nil
 		}
-	} else if slices.Contains(TimeTypesAll, t) || slices.Contains(TimeTypesAll, u) {
+	} else if IsOneOfTypes(columnType, TimeTypesAll) {
 		switch {
 		case t == "time.Time" || u == "time.Time":
 			return "time.Now()", nil
 		case t == "database/sql.NullTime" || u == "database/sql.NullTime":
 			return "sql.NullTime{Valid: true, Time: time.Now()}", nil
 		}
-	} else if slices.Contains(BooleanTypesAll, t) || slices.Contains(BooleanTypesAll, u) {
+	} else if IsOneOfTypes(columnType, BooleanTypesAll) {
 		switch {
 		case t == "bool" || u == "bool":
 			return fmt.Sprintf("%t", tv.Value), nil
@@ -473,11 +481,8 @@ func (d *DBModel) ReconcileRelationships() error {
 }
 
 func (c *Column) inferTestValuer() error {
-	t := c.Type.String()
-	u := c.Type.Underlying().String()
-
 	switch {
-	case slices.Contains(StringTypeJSON, t) || slices.Contains(StringTypeJSON, u):
+	case IsOneOfTypes(c.Type, StringTypeJSON):
 		v, err := NewValuerString(c.length, stringKindJSON, c.charSet, c.valueSet)
 		if err != nil {
 			return err
@@ -486,7 +491,7 @@ func (c *Column) inferTestValuer() error {
 		c.TestValuer = v
 		return nil
 
-	case slices.Contains(StringTypesAll, t) || slices.Contains(StringTypesAll, u):
+	case IsOneOfTypes(c.Type, StringTypesAll):
 		kind := stringKindBasic
 		if c.isJSON {
 			kind = stringKindJSON
@@ -502,7 +507,7 @@ func (c *Column) inferTestValuer() error {
 		c.TestValuer = v
 		return nil
 
-	case slices.Contains(NumericIntegerTypesAll, t) || slices.Contains(NumericIntegerTypesAll, u):
+	case IsOneOfTypes(c.Type, NumericIntegerTypesAll):
 		v, err := NewValuerNumeric(c.min, c.max, false)
 
 		if err != nil {
@@ -511,7 +516,7 @@ func (c *Column) inferTestValuer() error {
 		c.TestValuer = v
 		return nil
 
-	case slices.Contains(NumericFloatTypesAll, t) || slices.Contains(NumericFloatTypesAll, u):
+	case IsOneOfTypes(c.Type, NumericFloatTypesAll):
 		v, err := NewValuerNumeric(c.min, c.max, true)
 
 		if err != nil {
@@ -520,7 +525,7 @@ func (c *Column) inferTestValuer() error {
 		c.TestValuer = v
 		return nil
 
-	case slices.Contains(BooleanTypesAll, t) || slices.Contains(BooleanTypesAll, u):
+	case IsOneOfTypes(c.Type, BooleanTypesAll):
 		v, err := NewValuerBoolean()
 
 		if err != nil {
@@ -529,7 +534,7 @@ func (c *Column) inferTestValuer() error {
 		c.TestValuer = v
 		return nil
 
-	case slices.Contains(TimeTypesAll, t) || slices.Contains(TimeTypesAll, u):
+	case IsOneOfTypes(c.Type, TimeTypesAll):
 		v, err := NewValuerTime()
 
 		if err != nil {

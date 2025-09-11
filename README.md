@@ -19,11 +19,23 @@ Column definition is expected as a field tag (similar to json tag) in following 
 
 `gosqlgen:"column_name: REQUIRED;sql_type:REQUIRED[FLAGS]"`
 Where FLAGS are semicolon separated modifiers. Supported are:
+
+**Column constraint flags**
 - `pk` - primary key
 - `pk ai` - primary key auto incremented. Useful for inserts
 - `bk` - business key
 - `fk <table>.<column>` - foreign key referencing `column` on `table`
 - `sd` - soft delete column. If present, the generated `delete` method will be soft delete update
+
+**Column value flags** - useful only for generating tests
+- `min` - minimum value (relevant for numeric columns)
+- `max` - maximum value (relevant for numeric columns)
+- `length` - maximum length (relevant for string columns)
+- `valueSet (val1, val2, val3)` - set of allowed values (relevant for string columns)
+- `charSet (a, b, c, d)` - alphabet (relevant for string columns)
+- `isJSON` - string will be formatted as json (relevant for string columns)
+- `isUUID` - string will be formatted as uuid (relevant for string columns)
+
 
 ## Example
 
@@ -36,18 +48,18 @@ package dbrepo
 
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id;int;pk ai"`
-	Id    string `gosqlgen:"id;varchar(255);bk"`
-	Name  string `gosqlgen:"name;varchar(255)"`
+	RawId int    `gosqlgen:"_id;pk ai"`
+	Id    string `gosqlgen:"id;bk"`
+	Name  string `gosqlgen:"name;length 64"`
 }
 
 // gosqlgen: addresses
 type Address struct {
-	RawId     int32        `gosqlgen:"_id;int;pk ai"`
-	Id        string       `gosqlgen:"id;int;varchar(255);bk"`
-	Address   string       `gosqlgen:"address;varchar(255);bk"`
-	UserId    int          `gosqlgen:"user_id;int;fk users._id"`
-	DeletedAt sql.NullTime `gosqlgen:"deleted_at;datetime;sd"`
+	RawId     int32        `gosqlgen:"_id;pk ai"`
+	Id        string       `gosqlgen:"id;bk"`
+	Address   string       `gosqlgen:"address;bk;length 128"`
+	UserId    int          `gosqlgen:"user_id;fk users._id"`
+	DeletedAt sql.NullTime `gosqlgen:"deleted_at;sd"`
 }
 ```
 
