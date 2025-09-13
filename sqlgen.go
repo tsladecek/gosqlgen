@@ -41,9 +41,7 @@ func additionalImports(model *DBModel) ([]string, []string, error) {
 		}
 
 		for _, column := range table.Columns {
-			if IsOneOfTypes(column.Type, slices.Concat(IntegerTypesNull, FloatTypesNull, StringTypesNull, TimeTypesNull, BooleanTypesNull)) {
-				testCodeImportsMap["database/sql"] = true
-			} else if IsOneOfTypes(column.Type, []string{"time.Time"}) {
+			if IsOneOfTypes(column.Type, []string{"time.Time"}) {
 				testCodeImportsMap["time"] = true
 			}
 		}
@@ -165,6 +163,7 @@ type dbExecutor interface {
 package %s
 import (
 	"testing"
+	"database/sql"
 	%s
 
 	"github.com/stretchr/testify/assert"

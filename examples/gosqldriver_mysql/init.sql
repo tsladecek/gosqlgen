@@ -1,0 +1,6 @@
+create table users (
+  _id INTEGER UNIQUE PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  id VARCHAR(255) UNIQUE NOT NULL,
+	name VARCHAR(32)
+);
+
