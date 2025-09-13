@@ -120,9 +120,9 @@ func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column,
 		if c.SoftDelete {
 			switch c.Type.String() {
 			case "bool":
-				queryCond = append(queryCond, fmt.Sprintf("%s = true", c.Name))
+				queryCond = append(queryCond, fmt.Sprintf("%s = false", c.Name))
 			case "database/sql.NullTime":
-				queryCond = append(queryCond, fmt.Sprintf("%s IS NOT NULL", c.Name))
+				queryCond = append(queryCond, fmt.Sprintf("%s IS NULL", c.Name))
 			case "string":
 				queryCond = append(queryCond, fmt.Sprintf(`%s = ?`, c.Name))
 				queryCondValues = append(queryCondValues, `""`)

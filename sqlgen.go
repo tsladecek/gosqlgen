@@ -121,7 +121,7 @@ func CreateTemplates(d Driver, model *DBModel, outputPath, outputTestPath string
 		}
 
 		if !table.SkipTests {
-			err = ts.Generate(testWriterContent, d, table)
+			err = ts.Generate(testWriterContent, table)
 			if err != nil {
 				return fmt.Errorf("Failed to create test template for table %s: %w", table.Name, err)
 			}

@@ -3,15 +3,8 @@ func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 	ctx := t.Context()
 	var err error
 
-	{{ template "getInsert" . }}
+	{{ .Tests }}
 
-	{{ if not .SkipTestUpdate }}
-	{{ template "update" . }}
-	{{ end }}
-
-	{{ if not .SkipTestDelete }}
-	{{ template "delete" . }}
-	{{ end }}
 	}
 {{end}}
 
