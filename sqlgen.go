@@ -33,7 +33,8 @@ const DBExecutorVarName = "testSqlDb"
 
 func additionalImports(model *DBModel) ([]string, []string, error) {
 	codeImports := []string{}
-	testCodeImports := make(map[string]bool)
+	testCodeImports := []string{}
+	testCodeImportsMap := make(map[string]bool)
 	for _, table := range model.Tables {
 		if table.SkipTests {
 			continue
@@ -41,14 +42,18 @@ func additionalImports(model *DBModel) ([]string, []string, error) {
 
 		for _, column := range table.Columns {
 			if IsOneOfTypes(column.Type, slices.Concat(IntegerTypesNull, FloatTypesNull, StringTypesNull, TimeTypesNull, BooleanTypesNull)) {
-				testCodeImports["database/sql"] = true
+				testCodeImportsMap["database/sql"] = true
 			} else if IsOneOfTypes(column.Type, []string{"time.Time"}) {
-				testCodeImports["time"] = true
+				testCodeImportsMap["time"] = true
 			}
 		}
 	}
 
-	return codeImports, slices.Collect(maps.Keys(testCodeImports)), nil
+	if len(testCodeImportsMap) > 0 {
+		testCodeImports = slices.Collect(maps.Keys(testCodeImportsMap))
+	}
+
+	return codeImports, testCodeImports, nil
 }
 
 func formatImports(imports []string) string {
