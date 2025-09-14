@@ -3,7 +3,7 @@
 > [!WARNING]
 > Under active development. API might change
 
-SQL method go code generator based on table annotations using field tags.
+SQL method Go(lang) code generator based on table annotations using field tags.
 
 ## Table and Column definition
 ### Table
@@ -33,8 +33,8 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 - `length` - maximum length (relevant for string columns)
 - `valueSet (val1, val2, val3)` - set of allowed values (relevant for string columns)
 - `charSet (a, b, c, d)` - alphabet (relevant for string columns)
-- `isJSON` - string will be formatted as json (relevant for string columns)
-- `isUUID` - string will be formatted as uuid (relevant for string columns)
+- `json` - string will be formatted as json (relevant for string columns)
+- `uuid` - string will be formatted as uuid (relevant for string columns)
 
 
 ## Example

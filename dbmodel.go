@@ -243,7 +243,7 @@ func tagEquals(tag string, value Flag) bool {
 
 func tagFields(tag string) []string {
 	fields := []string{}
-	for _, c := range strings.Split(strings.TrimSpace(tag), " ") {
+	for c := range strings.SplitSeq(strings.TrimSpace(tag), " ") {
 		c = strings.TrimSpace(c)
 		if c == "" {
 			continue
@@ -272,7 +272,7 @@ func tagListContent(tag string) ([]string, error) {
 	}
 
 	content := []string{}
-	for _, s := range strings.Split(strings.TrimPrefix(strings.TrimSuffix(tagContent, ")"), "("), ",") {
+	for s := range strings.SplitSeq(strings.TrimPrefix(strings.TrimSuffix(tagContent, ")"), "("), ",") {
 		if slices.Contains(content, s) {
 			continue
 		}
