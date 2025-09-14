@@ -48,8 +48,6 @@ func (d DSN) DB() *sql.DB {
 	return pool
 }
 
-var testDBContainer = "gosqlgen_gosqldrivermysql"
-
 func CreateContainer() (func(ctx context.Context), *sql.DB, error) {
 	dbName := rand.Text()
 	dbUser := "root"
@@ -68,7 +66,7 @@ func CreateContainer() (func(ctx context.Context), *sql.DB, error) {
 		Image:        "mariadb:11.7.2",
 		ExposedPorts: []string{port},
 		Env:          env,
-		Name:         dbName,
+		Name:         "gosqlgen_gosqldrivermysql",
 		WaitingFor: wait.ForSQL(nat.Port(port), "mysql", func(host string, port nat.Port) string {
 			d := DSN{User: dbUser, Password: dbPassword, Host: host, Port: port.Int(), DBName: dbName}
 			return d.encode()

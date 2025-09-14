@@ -88,9 +88,9 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 	} else if IsOneOfTypes(columnType, TimeTypesAll) {
 		switch {
 		case t == "time.Time" || u == "time.Time":
-			return "time.Now()", nil
+			return "time.Now().UTC().Truncate(time.Second)", nil
 		case t == "database/sql.NullTime" || u == "database/sql.NullTime":
-			return "sql.NullTime{Valid: true, Time: time.Now()}", nil
+			return "sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}", nil
 		}
 	} else if IsOneOfTypes(columnType, BooleanTypesAll) {
 		switch {

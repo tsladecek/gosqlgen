@@ -4,6 +4,7 @@ package gosqldrivermysql
 import (
 	"database/sql"
 	"encoding/json"
+	"time"
 )
 
 type Continent string
@@ -19,15 +20,14 @@ type ShouldBeSkipped struct {
 
 // gosqlgen: users
 type User struct {
-	RawId     int             `gosqlgen:"_id;pk;ai"`
-	Id        string          `gosqlgen:"id;bk;length 255"`
-	Name      []byte          `gosqlgen:"name"`
-	payload   json.RawMessage `gosqlgen:"payload"`
-	Age       sql.NullInt32   `gosqlgen:"age; min 0; max 130"`
-	DrivesCar sql.NullBool    `gosqlgen:"drives_car"`
-	// TODO:time columns can not use the basic comparison function of testify
-	// Birthday   sql.NullTime    `gosqlgen:"birthday"`
-	// Registered time.Time       `gosqlgen:"registered"`
+	RawId      int             `gosqlgen:"_id;pk;ai"`
+	Id         string          `gosqlgen:"id;bk;length 255"`
+	Name       []byte          `gosqlgen:"name"`
+	payload    json.RawMessage `gosqlgen:"payload"`
+	Age        sql.NullInt32   `gosqlgen:"age; min 0; max 130"`
+	DrivesCar  sql.NullBool    `gosqlgen:"drives_car"`
+	Birthday   sql.NullTime    `gosqlgen:"birthday"`
+	Registered time.Time       `gosqlgen:"registered"`
 }
 
 // gosqlgen: admins;skip tests

@@ -70,20 +70,57 @@ func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*ins
 }
 
 type testSuite struct {
-	testTemplate *template.Template
+	templates *template.Template
 }
 
 //go:embed testTemplate.tmpl
-var testTemplateFS embed.FS
+var templateFS embed.FS
 
 func NewTestSuite() (testSuite, error) {
-	tmpl, err := template.ParseFS(testTemplateFS, "*.tmpl")
+	tmpl, err := template.ParseFS(templateFS, "*.tmpl")
 
 	if err != nil {
 		return testSuite{}, err
 	}
 
-	return testSuite{testTemplate: tmpl}, nil
+	return testSuite{templates: tmpl}, nil
+}
+
+func (ts *testSuite) newData(table *Table) (map[string]any, error) {
+	pk, bk, err := table.PkAndBk()
+	if err != nil {
+		return nil, fmt.Errorf("%w: could not parse primary and business keys from table", err)
+	}
+
+	var inserts bytes.Buffer
+	insertedData, err := table.testInsert(&inserts, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: when creating test inserts", err)
+	}
+
+	updatesPk, insertedData, err := updatedValues(insertedData)
+	if err != nil {
+		return nil, fmt.Errorf("%w: when creating update template for pks", err)
+	}
+	updatesBk, insertedData, err := updatedValues(insertedData)
+	if err != nil {
+		return nil, fmt.Errorf("%w: when creating update template for pks", err)
+	}
+
+	data := make(map[string]any)
+	data["Inserts"] = inserts.String()
+	data["StructName"] = table.StructName
+	data["MethodGetByPrimaryKeys"] = MethodGetByPrimaryKeys
+	data["MethodGetByBusinessKeys"] = MethodGetByBusinessKeys
+	data["PrimaryKeys"] = pk
+	data["BusinessKeys"] = bk
+	data["TableVarName"] = insertedData.varName
+	data["UpdatesPK"] = updatesPk
+	data["UpdatesBK"] = updatesBk
+	data["MethodUpdateByPrimaryKeys"] = MethodUpdateByPrimaryKeys
+	data["MethodUpdateByBusinessKeys"] = MethodUpdateByBusinessKeys
+
+	return data, nil
 }
 
 func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, error) {
@@ -112,92 +149,31 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 }
 
 func (ts *testSuite) getInsert(w io.Writer, table *Table) error {
-	pk, bk, err := table.PkAndBk()
+	data, err := ts.newData(table)
 	if err != nil {
-		return fmt.Errorf("%w: could not parse primary and business keys from table", err)
+		return fmt.Errorf("%w: when generating test data for get/insert method", err)
 	}
 
-	var inserts bytes.Buffer
-	insertedData, err := table.testInsert(&inserts, nil)
-	if err != nil {
-		return fmt.Errorf("%w: when creating test inserts", err)
-	}
-
-	data := make(map[string]any)
-	data["Inserts"] = inserts.String()
-	data["StructName"] = table.StructName
-	data["MethodGetByPrimaryKeys"] = MethodGetByPrimaryKeys
-	data["MethodGetByBusinessKeys"] = MethodGetByBusinessKeys
-	data["PrimaryKeys"] = pk
-	data["BusinessKeys"] = bk
-	data["TableVarName"] = insertedData.varName
-
-	ts.testTemplate.ExecuteTemplate(w, "getInsert", data)
+	ts.templates.ExecuteTemplate(w, "getInsert", data)
 	return nil
 }
 
 func (ts *testSuite) update(w io.Writer, table *Table) error {
-	pk, bk, err := table.PkAndBk()
+	data, err := ts.newData(table)
 	if err != nil {
-		return fmt.Errorf("%w: could not parse primary and business keys from table", err)
+		return fmt.Errorf("%w: when generating test data for update method", err)
 	}
-
-	var inserts bytes.Buffer
-	insertedData, err := table.testInsert(&inserts, nil)
-	if err != nil {
-		return fmt.Errorf("%w: when creating test inserts", err)
-	}
-
-	updatesPk, insertedData, err := updatedValues(insertedData)
-	if err != nil {
-		return fmt.Errorf("%w: when creating update template for pks", err)
-	}
-	updatesBk, insertedData, err := updatedValues(insertedData)
-	if err != nil {
-		return fmt.Errorf("%w: when creating update template for pks", err)
-	}
-
-	_ = insertedData
-
-	data := make(map[string]any)
-	data["Inserts"] = inserts.String()
-	data["StructName"] = table.StructName
-	data["MethodGetByPrimaryKeys"] = MethodGetByPrimaryKeys
-	data["MethodGetByBusinessKeys"] = MethodGetByBusinessKeys
-	data["PrimaryKeys"] = pk
-	data["BusinessKeys"] = bk
-	data["TableVarName"] = insertedData.varName
-	data["UpdatesPK"] = updatesPk
-	data["UpdatesBK"] = updatesBk
-	data["MethodUpdateByPrimaryKeys"] = MethodUpdateByPrimaryKeys
-	data["MethodUpdateByBusinessKeys"] = MethodUpdateByBusinessKeys
-
-	ts.testTemplate.ExecuteTemplate(w, "update", data)
+	ts.templates.ExecuteTemplate(w, "update", data)
 	return nil
 }
 
 func (ts *testSuite) delete(w io.Writer, table *Table) error {
-	pk, bk, err := table.PkAndBk()
+	data, err := ts.newData(table)
 	if err != nil {
-		return fmt.Errorf("%w: could not parse primary and business keys from table", err)
+		return fmt.Errorf("%w: when generating test data for delete method", err)
 	}
 
-	var inserts bytes.Buffer
-	insertedData, err := table.testInsert(&inserts, nil)
-	if err != nil {
-		return fmt.Errorf("%w: when creating test inserts", err)
-	}
-
-	data := make(map[string]any)
-	data["Inserts"] = inserts.String()
-	data["StructName"] = table.StructName
-	data["MethodGetByPrimaryKeys"] = MethodGetByPrimaryKeys
-	data["MethodGetByBusinessKeys"] = MethodGetByBusinessKeys
-	data["PrimaryKeys"] = pk
-	data["BusinessKeys"] = bk
-	data["TableVarName"] = insertedData.varName
-
-	ts.testTemplate.ExecuteTemplate(w, "delete", data)
+	ts.templates.ExecuteTemplate(w, "delete", data)
 	return nil
 }
 
@@ -222,7 +198,7 @@ func (ts *testSuite) Generate(w io.Writer, table *Table) error {
 	data := make(map[string]string)
 	data["Tests"] = tempW.String()
 	data["StructName"] = table.StructName
-	ts.testTemplate.ExecuteTemplate(w, "main", data)
+	ts.templates.ExecuteTemplate(w, "main", data)
 
 	return nil
 }
