@@ -1,3 +1,58 @@
+{{define "testHeader"}}
+{{ .Header }}
+
+package {{ .Package }}
+
+import (
+	"testing"
+	"database/sql"
+	"reflect"
+	"fmt"
+	{{ range .Imports }}
+	"{{.}}"
+	{{ end }}
+)
+
+var testDb *sql.DB
+
+func logf(t *testing.T, format string, args ...any) {
+	t.Logf("%s: %s", t.Name(), fmt.Sprintf(format, args...))
+}
+
+func assertEqual(t *testing.T, a, b any) {
+	t.Helper()
+	if a == nil && b == nil {
+		return
+	}
+
+	if reflect.DeepEqual(a, b) {
+		return
+	}
+
+	logf(t, "objects not equal\nExpected\n\t%+v\nReceived\n\t%+v", a, b)
+	t.Fail()
+}
+
+func requireNoError(t *testing.T, err error) {
+	t.Helper()
+
+	if err != nil {
+		logf(t, "error should be nil: %v", err)
+		t.FailNow()
+	}
+}
+
+func requireError(t *testing.T, err error) {
+	t.Helper()
+
+	if err == nil {
+		logf(t, "error should not be nil: %v", err)
+		t.FailNow()
+	}
+}
+{{end}}
+
+
 {{define "main"}}
 func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 	ctx := t.Context()
@@ -15,15 +70,15 @@ t.Run("getInsert", func(t *testing.T) {
 	// Get By Primary Keys
 	gotByPk := {{.StructName}}{}
 	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
-	require.NoError(t, err)
-	assert.Equal(t, {{.TableVarName}}, gotByPk)
+	requireNoError(t, err)
+	assertEqual(t, {{.TableVarName}}, gotByPk)
 
 	{{ if .BusinessKeys }}// Get By Business Keys
 	gotByBk := {{.StructName}}{}
 	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
-	require.NoError(t, err)
-	assert.Equal(t, {{.TableVarName}}, gotByBk)
-	assert.Equal(t, gotByPk, gotByBk)
+	requireNoError(t, err)
+	assertEqual(t, {{.TableVarName}}, gotByBk)
+	assertEqual(t, gotByPk, gotByBk)
 	{{ end }}
 })
 {{end}}
@@ -34,23 +89,23 @@ t.Run("update", func(t *testing.T) {
 
 	{{ .UpdatesPK }}
 	err = {{.TableVarName}}.{{.MethodUpdateByPrimaryKeys}}(ctx, testDb)
-	require.NoError(t, err)
+	requireNoError(t, err)
 
 	// Get By Primary Keys
 	gotByPk := {{.StructName}}{}
 	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
-	require.NoError(t, err)
-	assert.Equal(t, {{.TableVarName}}, gotByPk)
+	requireNoError(t, err)
+	assertEqual(t, {{.TableVarName}}, gotByPk)
 
 	{{ if .BusinessKeys }}// Get By Business Keys
 	{{ .UpdatesBK }}
 	err = {{.TableVarName}}.{{$.MethodUpdateByBusinessKeys}}(ctx, testDb)
-	require.NoError(t, err)
+	requireNoError(t, err)
 
 	gotByBk := {{.StructName}}{}
 	err = gotByBk.{{.MethodGetByBusinessKeys}}(ctx, testDb, {{ range .BusinessKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
-	require.NoError(t, err)
-	assert.Equal(t, {{.TableVarName}}, gotByBk)
+	requireNoError(t, err)
+	assertEqual(t, {{.TableVarName}}, gotByBk)
 	{{ end }}
 })
 {{end}}
@@ -61,13 +116,13 @@ t.Run("delete", func(t *testing.T) {
 
 	got := {{.StructName}}{}
 	err = got.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
-	require.NoError(t, err)
-	assert.Equal(t, {{.TableVarName}}, got)
+	requireNoError(t, err)
+	assertEqual(t, {{.TableVarName}}, got)
 
 	err = got.delete(ctx, testDb)
-	require.NoError(t, err)
+	requireNoError(t, err)
 	gotAfterDelete := {{ $.StructName }}{}
 	err = gotAfterDelete.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
-	require.Error(t, err)
+	requireError(t, err)
 })
 {{end}}

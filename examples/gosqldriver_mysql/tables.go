@@ -1,4 +1,4 @@
-//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql -debug
+//go:generate go run ../../cmd/main.go -driver gosqldriver_mysql
 package gosqldrivermysql
 
 import (

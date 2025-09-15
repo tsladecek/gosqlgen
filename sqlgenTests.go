@@ -63,7 +63,7 @@ func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*ins
 
 	fmt.Fprintf(w, `%s := %s{%s}
 		err = %s.insert(ctx, testDb)
-		require.NoError(t, err)
+		requireNoError(t, err)
 		`, it.varName, t.StructName, strings.Join(d, ", "), it.varName)
 
 	return it, nil
@@ -73,11 +73,11 @@ type testSuite struct {
 	templates *template.Template
 }
 
-//go:embed testTemplate.tmpl
+//go:embed templates
 var templateFS embed.FS
 
 func NewTestSuite() (testSuite, error) {
-	tmpl, err := template.ParseFS(templateFS, "*.tmpl")
+	tmpl, err := template.ParseFS(templateFS, "templates/*.tmpl")
 
 	if err != nil {
 		return testSuite{}, err
