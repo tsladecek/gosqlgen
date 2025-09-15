@@ -21,9 +21,6 @@ func logf(t *testing.T, format string, args ...any) {
 
 func assertEqual(t *testing.T, a, b any) {
 	t.Helper()
-	if a == nil && b == nil {
-		return
-	}
 
 	if reflect.DeepEqual(a, b) {
 		return
