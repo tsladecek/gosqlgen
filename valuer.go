@@ -106,14 +106,6 @@ func (v valuerNumeric) Zero() TestValue {
 	return TestValue{int(v.min)}
 }
 
-type stringKind string
-
-const (
-	stringKindBasic stringKind = "basic"
-	stringKindJSON  stringKind = "json"
-	stringKindUUID  stringKind = "UUID"
-)
-
 type valuerString struct {
 	length   int
 	kind     stringKind
@@ -122,7 +114,7 @@ type valuerString struct {
 }
 
 func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []string) (valuerString, error) {
-	if !slices.Contains([]stringKind{stringKindBasic, stringKindJSON, stringKindUUID}, kind) {
+	if !slices.Contains([]stringKind{stringKindBasic, stringKindJSON, stringKindUUID, stringKindEnum}, kind) {
 		return valuerString{}, fmt.Errorf("%w: kind=%s", ErrStringKind, kind)
 	}
 
@@ -165,6 +157,17 @@ func (v valuerString) basic(prev string) (TestValue, error) {
 	return TestValue{}, fmt.Errorf("%w: can not infer new basic string value", ErrValuer)
 }
 
+func (v valuerString) enum(prev string) (TestValue, error) {
+	if len(v.valueSet) == 1 {
+		return TestValue{}, fmt.Errorf("%w: can not infer new value since the value set contains only one item", ErrValuer)
+	}
+
+	if v.valueSet[0] == prev {
+		return TestValue{Value: v.valueSet[1]}, nil
+	}
+	return TestValue{v.valueSet[0]}, nil
+}
+
 func (v valuerString) randomString(length int) string {
 	return RandomString(length, v.charSet)
 }
@@ -191,6 +194,8 @@ func (v valuerString) New(prev TestValue) (TestValue, error) {
 		return v.json()
 	case stringKindUUID:
 		return v.uuid()
+	case stringKindEnum:
+		return v.enum(ps)
 	}
 
 	return TestValue{}, ErrStringKind

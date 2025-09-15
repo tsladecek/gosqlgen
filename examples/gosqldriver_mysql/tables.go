@@ -42,7 +42,7 @@ type Country struct {
 	Id        string    `gosqlgen:"id;bk"`
 	Name      string    `gosqlgen:"name"`
 	GPS       string    `gosqlgen:"gps"`
-	Continent Continent `gosqlgen:"continent;valueset (Asia, Europe, Africa)"`
+	Continent Continent `gosqlgen:"continent; enum (Asia, Europe, Africa)"`
 }
 
 // gosqlgen: addresses

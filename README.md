@@ -32,13 +32,13 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 - `max` - maximum value (relevant for numeric columns)
 - `length` - maximum length (relevant for string columns)
 - `charSet (a, b, c, d)` - alphabet (relevant for string columns)
-- `valueSet (val1, val2, val3)` - set of allowed values (relevant for string columns). Format specifier
-- `json` - string will be formatted as json (relevant for string columns). Format specifier
-- `uuid` - string will be formatted as uuid (relevant for string columns). Format specifier
+- `enum (val1, val2, val3)` - set of allowed values (relevant for string columns). *Format specifier*
+- `json` - string will be formatted as json (relevant for string columns). *Format specifier*
+- `uuid` - string will be formatted as uuid (relevant for string columns). *Format specifier*
 
-Format specifiers dictate some specific format of the output strings. Only one must be supplied.
-The tool will not raise any errors if more are used within the tag. However, currently there is no
-guarantee which will be chosen.
+*Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
+The tool will not raise any errors if more are used within the tag. In such case, the last (right
+most) format specifier will be used
 
 ## Example
 
@@ -62,7 +62,7 @@ type User struct {
 	RawId int    `gosqlgen:"_id;pk ai"`
 	Id    string `gosqlgen:"id;bk"`
 	Name  string `gosqlgen:"name;length 64"`
-	BirthContinent Continent `gosqlgen:"birth_continent;valueset (Asia, Europe, Africa)"`
+	BirthContinent Continent `gosqlgen:"birth_continent; enum (Asia, Europe, Africa)"`
 	
 }
 

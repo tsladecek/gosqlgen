@@ -109,6 +109,15 @@ type TestValuer interface {
 	Zero() TestValue
 }
 
+type stringKind string
+
+const (
+	stringKindBasic stringKind = "basic"
+	stringKindEnum  stringKind = "enum"
+	stringKindJSON  stringKind = "json"
+	stringKindUUID  stringKind = "uuid"
+)
+
 type Column struct {
 	Name          string     // name of the sql column
 	FieldName     string     // name of the field in the struct
@@ -124,10 +133,9 @@ type Column struct {
 	min        float64
 	max        float64
 	length     int
-	valueSet   []string
 	charSet    []rune
-	isJSON     bool
-	isUUID     bool
+	format     stringKind
+	valueSet   []string
 	TestValuer TestValuer // TestValuer
 
 	fk string
@@ -324,7 +332,7 @@ const (
 	FlagLength        Flag = "length"
 	FlagJSON          Flag = "json"
 	FlagUUID          Flag = "uuid"
-	FlagValueSet      Flag = "valueset"
+	FlagEnum          Flag = "enum"
 	FlagCharSet       Flag = "charset"
 )
 
@@ -349,6 +357,7 @@ func NewColumn(tag string) (*Column, error) {
 
 	c := &Column{}
 	c.Name = strings.TrimSpace(items[0])
+	c.format = stringKindBasic
 
 	if len(items) == 1 {
 		return c, nil
@@ -373,9 +382,9 @@ func NewColumn(tag string) (*Column, error) {
 			}
 			c.fk = fkFields[1]
 		case tagEquals(m, FlagJSON):
-			c.isJSON = true
+			c.format = stringKindJSON
 		case tagEquals(m, FlagUUID):
-			c.isUUID = true
+			c.format = stringKindUUID
 		case tagHasPrefix(m, FlagMin):
 			n, err := tagFloat(m)
 			if err != nil {
@@ -394,13 +403,14 @@ func NewColumn(tag string) (*Column, error) {
 				return nil, fmt.Errorf("%w: when parsing length, column=%s", err, c.Name)
 			}
 			c.length = n
-		case tagHasPrefix(m, FlagValueSet):
+		case tagHasPrefix(m, FlagEnum):
 			valueSet, err := tagListContent(m)
 			if err != nil {
 				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
 			}
 
 			c.valueSet = valueSet
+			c.format = stringKindEnum
 		case tagHasPrefix(m, FlagCharSet):
 			valueSet, err := tagListContent(m)
 			if err != nil {
@@ -517,14 +527,10 @@ func (c *Column) inferTestValuer() error {
 		return nil
 
 	case IsOneOfTypes(c.Type, StringTypesAll):
-		kind := stringKindBasic
-		if c.isJSON {
-			kind = stringKindJSON
-		} else if c.isUUID {
-			kind = stringKindUUID
+		if c.format == "" {
+			c.format = stringKindBasic
 		}
-
-		v, err := NewValuerString(c.length, kind, c.charSet, c.valueSet)
+		v, err := NewValuerString(c.length, c.format, c.charSet, c.valueSet)
 		if err != nil {
 			return err
 		}
