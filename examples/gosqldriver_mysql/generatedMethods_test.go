@@ -44,7 +44,7 @@ func requireError(t *testing.T, err error) {
 	t.Helper()
 
 	if err == nil {
-		logf(t, "error should not be nil: %v", err)
+		logf(t, "error should not be nil")
 		t.FailNow()
 	}
 }
