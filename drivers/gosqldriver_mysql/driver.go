@@ -1,12 +1,9 @@
 package gosqldrivermysql
 
 import (
-	crand "crypto/rand"
 	"fmt"
 	"io"
-	"math/rand"
 	"slices"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -123,9 +120,9 @@ func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column,
 		if c.SoftDelete {
 			switch c.Type.String() {
 			case "bool":
-				queryCond = append(queryCond, fmt.Sprintf("%s = true", c.Name))
+				queryCond = append(queryCond, fmt.Sprintf("%s = false", c.Name))
 			case "database/sql.NullTime":
-				queryCond = append(queryCond, fmt.Sprintf("%s IS NOT NULL", c.Name))
+				queryCond = append(queryCond, fmt.Sprintf("%s IS NULL", c.Name))
 			case "string":
 				queryCond = append(queryCond, fmt.Sprintf(`%s = ?`, c.Name))
 				queryCondValues = append(queryCondValues, `""`)
@@ -283,62 +280,4 @@ func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 
 	d.updateTemplate.Execute(w, data)
 	return nil
-}
-
-func randString(maxLength int) string {
-	s := crand.Text()
-	return s[:min(len(s), maxLength)]
-}
-
-func (d driver) RandValue(c *gosqlgen.Column) (any, error) {
-	st := c.SQLType
-
-	if slices.Contains([]string{"bigint", "int", "int1", "int2", "int3", "int4", "int8", "integer", "smallint", "tinyint"}, strings.ToLower(st)) {
-		return rand.Intn(128), nil
-	}
-
-	if slices.Contains([]string{"double", "float", "float4", "float8"}, strings.ToLower(st)) {
-		return rand.Float32(), nil
-	}
-
-	if slices.Contains([]string{"bool", "boolean"}, strings.ToLower(st)) {
-		return []bool{true, false}[rand.Intn(2)], nil
-	}
-
-	if slices.Contains([]string{"tinyblob", "blob", "mediumblob", "longblob", "tinytext", "text", "mediumtext", "longtext"}, strings.ToLower(st)) {
-		return randString(255), nil
-	}
-
-	if after, ok := strings.CutPrefix(strings.ToLower(st), "varchar("); ok {
-		if after, ok := strings.CutSuffix(after, ")"); ok {
-			l, err := strconv.Atoi(after)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to parse varchar length to integer")
-			}
-
-			return randString(l), nil
-
-		} else {
-			return nil, fmt.Errorf("Invalid varchar sql type. Should be in format: varchar(<length>)")
-		}
-	}
-
-	p := ""
-	if strings.HasPrefix(strings.ToLower(st), "enum(") {
-		p = st[:5]
-	}
-
-	if p != "" {
-		if after, ok := strings.CutPrefix(st, p); ok {
-			if after, ok := strings.CutSuffix(after, ")"); ok {
-				choices := strings.Split(strings.ReplaceAll(after, "'", ""), ",")
-				return strings.TrimSpace(choices[rand.Intn(len(choices))]), nil
-
-			} else {
-				return nil, fmt.Errorf("Invalid enum sql type. Should be in format: enum(<values>)")
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("Failed to generate random value for column")
 }

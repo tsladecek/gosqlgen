@@ -8,10 +8,115 @@ import (
 	"go/token"
 	"go/types"
 	"slices"
+	"strconv"
 	"strings"
 )
 
 const TagPrefix = "gosqlgen"
+
+type TestValue struct {
+	Value any
+}
+
+var (
+	IntegerTypes     = []string{"int", "int8", "int16", "int32", "int64"}
+	IntegerTypesNull = []string{"database/sql.NullInt16", "database/sql.NullInt32", "database/sql.NullInt64"}
+
+	FloatTypes     = []string{"float32", "float64"}
+	FloatTypesNull = []string{"database/sql.NullFloat64"}
+
+	NumericTypes           = slices.Concat(IntegerTypes, FloatTypes)
+	NumericIntegerTypesAll = slices.Concat(IntegerTypes, IntegerTypesNull)
+	NumericFloatTypesAll   = slices.Concat(FloatTypes, FloatTypesNull)
+	NumericTypesAll        = slices.Concat(NumericIntegerTypesAll, NumericFloatTypesAll)
+
+	StringTypes     = []string{"string", "[]byte", "byte", "rune"}
+	StringTypesNull = []string{"database/sql.NullString", "database/sql.NullByte"}
+	StringTypesAll  = slices.Concat(StringTypes, StringTypesNull)
+	StringTypeJSON  = []string{"encoding/json.RawMessage"}
+
+	TimeTypes     = []string{"time.Time"}
+	TimeTypesNull = []string{"database/sql.NullTime"}
+	TimeTypesAll  = slices.Concat(TimeTypes, TimeTypesNull)
+
+	BooleanTypes     = []string{"bool"}
+	BooleanTypesNull = []string{"database/sql.NullBool"}
+	BooleanTypesAll  = slices.Concat(BooleanTypes, BooleanTypesNull)
+)
+
+func IsOneOfTypes(typ types.Type, options []string) bool {
+	// Each type T has an underlying type: If T is one of the predeclared boolean, numeric, or string types, or a type literal, the corresponding underlying type is T itself. Otherwise, T's underlying type is the underlying type of the type to which T refers in its declaration.
+	t := typ.String()
+	u := typ.Underlying().String()
+
+	return slices.Contains(options, t) || slices.Contains(options, u)
+}
+
+func (tv TestValue) Format(columnType types.Type) (string, error) {
+	t := columnType.String()
+	u := columnType.Underlying().String()
+
+	if IsOneOfTypes(columnType, NumericTypesAll) {
+		switch {
+		// Numeric
+		case IsOneOfTypes(columnType, NumericTypes):
+			return fmt.Sprintf("%v", tv.Value), nil
+		case t == "database/sql.NullInt16" || u == "database/sql.NullInt16":
+			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", tv.Value), nil
+		case t == "database/sql.NullInt32" || u == "database/sql.NullInt32":
+			return fmt.Sprintf("sql.NullInt32{Valid: true, Int32: %d}", tv.Value), nil
+		case t == "database/sql.NullInt64" || u == "database/sql.NullInt64":
+			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", tv.Value), nil
+		case t == "database/sql.NullFloat64" || u == "database/sql.NullFloat64":
+			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %d}", tv.Value), nil
+		}
+	} else if IsOneOfTypes(columnType, StringTypesAll) {
+		switch {
+		case t == "string" || u == "string":
+			return fmt.Sprintf(`"%s"`, tv.Value), nil
+		case t == "byte" || u == "byte":
+			return fmt.Sprintf("byte('%s')", tv.Value), nil
+		case t == "rune" || u == "rune":
+			return fmt.Sprintf("rune('%s')", tv.Value), nil
+		case t == "[]byte" || u == "[]byte":
+			return fmt.Sprintf("[]byte(`%s`)", tv.Value), nil
+		case t == "sql.NullString":
+			return fmt.Sprintf("sql.NullString{Valid: true, String: \"%s\"}", tv.Value), nil
+		case t == "sql.NullByte":
+			return fmt.Sprintf("sql.NullByte{Valid: true, Byte: byte('%s')}", tv.Value), nil
+		}
+	} else if IsOneOfTypes(columnType, TimeTypesAll) {
+		switch {
+		case t == "time.Time" || u == "time.Time":
+			return "time.Now().UTC().Truncate(time.Second)", nil
+		case t == "database/sql.NullTime" || u == "database/sql.NullTime":
+			return "sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}", nil
+		}
+	} else if IsOneOfTypes(columnType, BooleanTypesAll) {
+		switch {
+		case t == "bool" || u == "bool":
+			return fmt.Sprintf("%t", tv.Value), nil
+		case t == "database/sql.NullBool" || u == "database/sql.NullBool":
+			return fmt.Sprintf("sql.NullBool{Valid: true, Bool: %t}", tv.Value), nil
+		}
+	}
+
+	return "", fmt.Errorf("%w: unsupported type=%s (underlying=%s) for formatting", ErrValueFormat, t, u)
+}
+
+type TestValuer interface {
+	New(prev TestValue) (TestValue, error)
+	Zero() TestValue
+}
+
+type stringKind string
+
+const (
+	stringKindBasic stringKind = "basic"
+	stringKindEnum  stringKind = "enum"
+	stringKindJSON  stringKind = "json"
+	stringKindUUID  stringKind = "uuid"
+)
 
 type Column struct {
 	Name          string     // name of the sql column
@@ -23,7 +128,15 @@ type Column struct {
 	SoftDelete    bool       // does this column represent soft deletion (sd)
 	BusinessKey   bool       // is this business key (bk)
 	AutoIncrement bool       // is this auto incremented? Important for inserts, since this column must be fetched
-	SQLType       string     // this can be driver specific
+
+	// useful only for test valuer
+	min        float64
+	max        float64
+	length     int
+	charSet    []rune
+	format     stringKind
+	valueSet   []string
+	TestValuer TestValuer // TestValuer
 
 	fk string
 }
@@ -49,8 +162,10 @@ var (
 	ErrNoClosingQuote   = errors.New("tag not closed with quote")
 
 	ErrEmptyTag          = errors.New("tag empty")
-	ErrTagFieldNumber    = errors.New("tag must have two required fields: column name and sql type (e.g. name,varchar(31))")
+	ErrTagFieldNumber    = errors.New("tag must have at least one field representing column name")
 	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
+	ErrFlagFieldNumber   = errors.New("invalid flag spec")
+	ErrFlagFormat        = errors.New("invalid flag format")
 
 	ErrColumnNotFound = errors.New("column not found")
 
@@ -61,7 +176,8 @@ var (
 
 	ErrNoColumnTag = errors.New("no column tag found")
 
-	ErrNoPrimaryKey = errors.New("no primary key found for table")
+	ErrNoPrimaryKey   = errors.New("no primary key found for table")
+	ErrUnsuportedType = errors.New("unsuported type")
 )
 
 func (d DBModel) Debug() {
@@ -125,6 +241,101 @@ func ExtractTagContent(tagName, input string) (string, error) {
 	return strings.TrimSpace(input[startIndex : startIndex+endIndex]), nil
 }
 
+func tagHasPrefix(tag string, prefix Flag) bool {
+	return strings.HasPrefix(strings.ToLower(tag), string(prefix))
+}
+
+func tagEquals(tag string, value Flag) bool {
+	return strings.EqualFold(strings.TrimSpace(tag), string(value))
+}
+
+func tagFields(tag string) []string {
+	fields := []string{}
+	for c := range strings.SplitSeq(strings.TrimSpace(tag), " ") {
+		c = strings.TrimSpace(c)
+		if c == "" {
+			continue
+		}
+
+		fields = append(fields, c)
+	}
+
+	return fields
+}
+
+// tagListContent extracts the content inside parentheses and
+// returns it as a slice of strings. It is space agnostic. The function
+// does not check the position of the content inside the tag
+func tagListContent(tag string) ([]string, error) {
+	fields := tagFields(tag)
+
+	if strings.HasPrefix(fields[0], "(") {
+		return nil, fmt.Errorf("%w: tag can not start with parenthesis", ErrFlagFormat)
+	}
+
+	tagContent := strings.Join(fields[1:], "")
+
+	if !strings.HasPrefix(tagContent, "(") || !strings.HasSuffix(tagContent, ")") {
+		return nil, fmt.Errorf("%w: tag must be surrounded with parenthesis", ErrFlagFormat)
+	}
+
+	content := []string{}
+	for s := range strings.SplitSeq(strings.TrimPrefix(strings.TrimSuffix(tagContent, ")"), "("), ",") {
+		if slices.Contains(content, s) {
+			continue
+		}
+
+		content = append(content, s)
+	}
+
+	return content, nil
+}
+
+// tagInt extracts integer from the second position in the space delimited tag fields
+func tagInt(tag string) (int, error) {
+	fields := tagFields(tag)
+	if len(fields) != 2 {
+		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+	}
+	n, err := strconv.Atoi(fields[1])
+
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to convert to integer", ErrFlagFormat)
+	}
+	return n, nil
+}
+
+// tagFloat extracts float from the second position in the space delimited tag fields
+func tagFloat(tag string) (float64, error) {
+	fields := tagFields(tag)
+	if len(fields) != 2 {
+		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+	}
+	n, err := strconv.ParseFloat(fields[1], 64)
+
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to convert to float", ErrFlagFormat)
+	}
+	return n, nil
+}
+
+type Flag string
+
+const (
+	FlagPrimaryKey    Flag = "pk"
+	FlagBusinesKey    Flag = "bk"
+	FlagSoftDelete    Flag = "sd"
+	FlagForeignKey    Flag = "fk"
+	FlagAutoIncrement Flag = "ai"
+	FlagMin           Flag = "min"
+	FlagMax           Flag = "max"
+	FlagLength        Flag = "length"
+	FlagJSON          Flag = "json"
+	FlagUUID          Flag = "uuid"
+	FlagEnum          Flag = "enum"
+	FlagCharSet       Flag = "charset"
+)
+
 // NewColumn constructs Column from a tag. Foreign keys are stored
 // in a temporary private field "fk". All relationships are reconcilled
 // after all tables have been parsed
@@ -140,36 +351,82 @@ func NewColumn(tag string) (*Column, error) {
 	}
 	items := strings.Split(tag, ";")
 
-	if len(items) < 2 {
+	if len(items) < 1 {
 		return nil, ErrTagFieldNumber
 	}
 
 	c := &Column{}
 	c.Name = strings.TrimSpace(items[0])
-	c.SQLType = strings.TrimSpace(items[1])
+	c.format = stringKindBasic
 
-	if len(items) == 2 {
+	if len(items) == 1 {
 		return c, nil
 	}
 
-	for _, tagItem := range items[2:] {
+	for _, tagItem := range items[1:] {
 		m := strings.TrimSpace(tagItem)
-		if m == "pk" {
-			c.PrimaryKey = true
-		} else if m == "pk ai" {
-			c.PrimaryKey = true
+
+		switch {
+		case tagEquals(m, FlagAutoIncrement):
 			c.AutoIncrement = true
-		} else if strings.HasPrefix(m, "fk") {
+		case tagEquals(m, FlagPrimaryKey):
+			c.PrimaryKey = true
+		case tagEquals(m, FlagBusinesKey):
+			c.BusinessKey = true
+		case tagEquals(m, FlagSoftDelete):
+			c.SoftDelete = true
+		case tagHasPrefix(m, FlagForeignKey):
 			fkFields := strings.Split(m, " ")
 			if len(fkFields) != 2 {
 				return nil, ErrFKSpecFieldNumber
 			}
 			c.fk = fkFields[1]
-		} else if m == "sd" {
-			c.SoftDelete = true
-		} else if m == "bk" {
-			c.BusinessKey = true
+		case tagEquals(m, FlagJSON):
+			c.format = stringKindJSON
+		case tagEquals(m, FlagUUID):
+			c.format = stringKindUUID
+		case tagHasPrefix(m, FlagMin):
+			n, err := tagFloat(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when parsing min, column=%s", err, c.Name)
+			}
+			c.min = n
+		case tagHasPrefix(m, FlagMax):
+			n, err := tagFloat(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when parsing max, column=%s", err, c.Name)
+			}
+			c.max = n
+		case tagHasPrefix(m, FlagLength):
+			n, err := tagInt(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: when parsing length, column=%s", err, c.Name)
+			}
+			c.length = n
+		case tagHasPrefix(m, FlagEnum):
+			valueSet, err := tagListContent(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
+			}
+
+			c.valueSet = valueSet
+			c.format = stringKindEnum
+		case tagHasPrefix(m, FlagCharSet):
+			valueSet, err := tagListContent(m)
+			if err != nil {
+				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
+			}
+			r := []rune{}
+
+			for _, s := range valueSet {
+				if len(s) != 1 {
+					return nil, fmt.Errorf("%w: char must be of length 1, column=%s", ErrFlagFormat, c.Name)
+				}
+				r = append(r, rune(s[0]))
+			}
+			c.charSet = r
 		}
+
 	}
 	return c, nil
 }
@@ -258,6 +515,69 @@ func (d *DBModel) ReconcileRelationships() error {
 	return nil
 }
 
+func (c *Column) inferTestValuer() error {
+	switch {
+	case IsOneOfTypes(c.Type, StringTypeJSON):
+		v, err := NewValuerString(c.length, stringKindJSON, c.charSet, c.valueSet)
+		if err != nil {
+			return err
+		}
+
+		c.TestValuer = v
+		return nil
+
+	case IsOneOfTypes(c.Type, StringTypesAll):
+		if c.format == "" {
+			c.format = stringKindBasic
+		}
+		v, err := NewValuerString(c.length, c.format, c.charSet, c.valueSet)
+		if err != nil {
+			return err
+		}
+
+		c.TestValuer = v
+		return nil
+
+	case IsOneOfTypes(c.Type, NumericIntegerTypesAll):
+		v, err := NewValuerNumeric(c.min, c.max, false)
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+
+	case IsOneOfTypes(c.Type, NumericFloatTypesAll):
+		v, err := NewValuerNumeric(c.min, c.max, true)
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+
+	case IsOneOfTypes(c.Type, BooleanTypesAll):
+		v, err := NewValuerBoolean()
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+
+	case IsOneOfTypes(c.Type, TimeTypesAll):
+		v, err := NewValuerTime()
+
+		if err != nil {
+			return err
+		}
+		c.TestValuer = v
+		return nil
+	}
+
+	return fmt.Errorf("%w: type=%s", ErrUnsuportedType, c.Type.String())
+}
+
 // NewDBModel parses the File and constructs the entire DBModel.
 // In the first pass, all tables and columns are constructed. In the
 // second, the relationships are reconcilled and finally the tables are
@@ -295,7 +615,6 @@ MainLoop:
 
 			err := table.ParseTableName(genDecl.Doc)
 			if errors.Is(err, ErrNoTableTag) {
-				fmt.Printf("Skipped struct %s, no parseable table definition found. If this is an error, please add it in the comment above the type\n", table.StructName)
 				continue MainLoop
 			}
 
@@ -317,6 +636,11 @@ MainLoop:
 					column.Type = info.TypeOf(fff.Type)
 					column.FieldName = fff.Names[0].Name
 					table.Columns = append(table.Columns, column)
+
+					err = column.inferTestValuer()
+					if err != nil {
+						return nil, fmt.Errorf("%w: when inferring test valuer - table=%s, column=%s", err, table.StructName, column.FieldName)
+					}
 				}
 			}
 		}

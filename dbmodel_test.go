@@ -88,14 +88,13 @@ func TestNewColumn(t *testing.T) {
 		expectedColumn Column
 	}{
 		{name: "invalid - empty tag", tag: fmt.Sprintf(`%s:""`, TagPrefix), expectedErr: ErrEmptyTag},
-		{name: "invalid - tag missing sql type", tag: fmt.Sprintf(`%s:"col"`, TagPrefix), expectedErr: ErrTagFieldNumber},
 		{name: "invalid - tag parsing", tag: fmt.Sprintf(`%s:col`, TagPrefix), expectedErr: ErrInvalidTagPrefix},
-		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table col;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
-		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
-		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;int;pk ai;fk table.col;bk;sd"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, SQLType: "int", fk: "table.col"}},
-		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;  int   ;    pk ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, SQLType: "int", fk: "table.col"}},
-		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;int;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", SQLType: "int", PrimaryKey: true}},
-		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;int;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", SQLType: "int"}},
+		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;pk ai;fk table col;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
+		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;pk ai;fk;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
+		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;pk;ai;fk table.col;bk;sd"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col", format: stringKindBasic}},
+		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;      pk;ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col", format: stringKindBasic}},
+		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, format: stringKindBasic}},
+		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", format: stringKindBasic}},
 	}
 
 	for _, tt := range cases {
@@ -233,20 +232,94 @@ func TestReconcileRelationships(t *testing.T) {
 	})
 }
 
+type customTestType struct {
+	stringReturn string
+}
+
+func (t customTestType) Underlying() types.Type {
+	return customTestType{stringReturn: t.stringReturn}
+}
+func (t customTestType) String() string {
+	return t.stringReturn
+}
+
+func TestColumnInferTestValuer(t *testing.T) {
+	defaultCharSet := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	defaultStringLength := 32
+	defaultMax := float64(32)
+
+	cases := []struct {
+		name               string
+		column             *Column
+		expectedTestValuer TestValuer
+		expectedErr        error
+	}{
+		{name: "string - json from type", column: &Column{Type: customTestType{stringReturn: "encoding/json.RawMessage"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindJSON, charSet: defaultCharSet}},
+		{name: "string - json from flag", column: &Column{Type: types.Typ[types.String], format: stringKindJSON}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindJSON, charSet: defaultCharSet}},
+		{name: "string - uuid", column: &Column{Type: types.Typ[types.String], format: stringKindUUID}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindUUID, charSet: defaultCharSet}},
+		{name: "string - string", column: &Column{Type: types.Typ[types.String]}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - []byte", column: &Column{Type: customTestType{stringReturn: "[]byte"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - byte", column: &Column{Type: customTestType{stringReturn: "byte"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - rune", column: &Column{Type: customTestType{stringReturn: "rune"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - sql.NullString", column: &Column{Type: customTestType{stringReturn: "database/sql.NullString"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+		{name: "string - sql.NullByte", column: &Column{Type: customTestType{stringReturn: "database/sql.NullByte"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet}},
+
+		{name: "string - string, charset", column: &Column{Type: types.Typ[types.String], charSet: []rune("abcd")}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: []rune("abcd")}},
+		{name: "string - string, valueset", column: &Column{Type: types.Typ[types.String], valueSet: []string{"abcd", "efgh"}}, expectedTestValuer: valuerString{length: defaultStringLength, kind: stringKindBasic, charSet: defaultCharSet, valueSet: []string{"abcd", "efgh"}}},
+
+		{name: "numeric - integer - int", column: &Column{Type: types.Typ[types.Int]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int8", column: &Column{Type: types.Typ[types.Int8]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int16", column: &Column{Type: types.Typ[types.Int16]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int32", column: &Column{Type: types.Typ[types.Int32]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - int64", column: &Column{Type: types.Typ[types.Int64]}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - sql.NullInt16", column: &Column{Type: customTestType{stringReturn: "database/sql.NullInt16"}}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - sql.NullInt32", column: &Column{Type: customTestType{stringReturn: "database/sql.NullInt32"}}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - sql.NullInt64", column: &Column{Type: customTestType{stringReturn: "database/sql.NullInt64"}}, expectedTestValuer: valuerNumeric{max: defaultMax}},
+		{name: "numeric - integer - min, max", column: &Column{Type: types.Typ[types.Int], min: 6, max: 16}, expectedTestValuer: valuerNumeric{max: 16, min: 6}},
+		{name: "numeric - float - float32", column: &Column{Type: types.Typ[types.Float32]}, expectedTestValuer: valuerNumeric{max: defaultMax, isFloat: true}},
+		{name: "numeric - float - float64", column: &Column{Type: types.Typ[types.Float64]}, expectedTestValuer: valuerNumeric{max: defaultMax, isFloat: true}},
+		{name: "numeric - float - sql.NullFloat64", column: &Column{Type: customTestType{stringReturn: "database/sql.NullFloat64"}}, expectedTestValuer: valuerNumeric{max: defaultMax, isFloat: true}},
+
+		{name: "time - time.Time", column: &Column{Type: customTestType{stringReturn: "time.Time"}}, expectedTestValuer: valuerTime{}},
+		{name: "time - sql.NullTime", column: &Column{Type: customTestType{stringReturn: "database/sql.NullTime"}}, expectedTestValuer: valuerTime{}},
+
+		{name: "boolean - bool", column: &Column{Type: types.Typ[types.Bool]}, expectedTestValuer: valuerBoolean{}},
+		{name: "boolean - sql.NullBool", column: &Column{Type: customTestType{stringReturn: "database/sql.NullBool"}}, expectedTestValuer: valuerBoolean{}},
+
+		{name: "unsupported type", column: &Column{Type: customTestType{stringReturn: "unsupported type"}}, expectedErr: ErrUnsuportedType},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.column.inferTestValuer()
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedTestValuer, tt.column.TestValuer)
+			}
+		})
+	}
+}
+
 func TestNewDBModel_HappyPath(t *testing.T) {
+	defaultCharSet := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	defaultStringLength := 32
 	content, err := format.Source([]byte(strings.Join([]string{
 		"package main",
 		"import \"database/sql\"",
 		"// gosqlgen: table1; skip tests",
 		"type Table1 struct {",
-		"Id int `gosqlgen:\"id; int; pk ai\"`",
-		"Name string `gosqlgen:\"name; varchar(255); bk\"`",
-		"deleted_at sql.NullTime `gosqlgen:\"deleted_at; datetime; sd\"`",
+		"Id int `gosqlgen:\"id;pk;ai;max 16\"`",
+		"Name string `gosqlgen:\"name; bk; length 8; charset (a,b,c,d)\"`",
+		"deleted_at sql.NullTime `gosqlgen:\"deleted_at;sd\"`",
+		"ShouldBeJSON string `gosqlgen:\"should_be_json; uuid; json;\"`", // although there is also uuid flag, format should be json as it is last
+		"ShouldBeUUID string `gosqlgen:\"should_be_uuid; json; uuid\"`",  // although there is also json flag, format should be uuid as it is last
 		"}",
 		"// gosqlgen: table2",
 		"type Table2 struct {",
-		"Id int `gosqlgen:\"id; int; pk ai\"`",
-		"Table1Id int `gosqlgen:\"table1_id; int;fk table1.id\"`",
+		"Id int `gosqlgen:\"id;pk;ai\"`",
+		"Table1Id int `gosqlgen:\"table1_id;fk table1.id\"`",
 		"}",
 	}, "\n")))
 	require.NoError(t, err)
@@ -266,17 +339,12 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 
 	assert.Equal(t, "table1", t1.Name)
 	assert.True(t, t1.SkipTests)
-	assert.Len(t, t1.Columns, 3)
+	assert.Len(t, t1.Columns, 5)
 
 	columnCompare := func(same bool, typeString string, expected, tested Column) {
 		compFunc := assert.Equal
 		if !same {
 			compFunc = assert.NotEqual
-		}
-
-		if typeString == "" {
-			compFunc(t, expected, tested)
-			return
 		}
 
 		compFunc(t, expected.Name, tested.Name)
@@ -288,29 +356,39 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		compFunc(t, expected.SoftDelete, tested.SoftDelete)
 		compFunc(t, expected.BusinessKey, tested.BusinessKey)
 		compFunc(t, expected.AutoIncrement, tested.AutoIncrement)
-		compFunc(t, expected.SQLType, tested.SQLType)
-
+		compFunc(t, expected.TestValuer, tested.TestValuer)
 	}
 
 	// Table: table1, Column: id
 	id, err := t1.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id)
-	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, SQLType: "int", Table: t1, Type: types.Typ[types.Int]}, *id)
+	assert.Equal(t, *id, Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t1, Type: types.Typ[types.Int], max: 16, format: stringKindBasic, TestValuer: valuerNumeric{max: 16}})
 
 	// Table: table1, Column: name
 	name, err := t1.GetColumn("name")
 	require.NoError(t, err)
 	require.NotNil(t, name)
-	columnCompare(true, "", Column{Name: "name", FieldName: "Name", BusinessKey: true, SQLType: "varchar(255)", Table: t1, Type: types.Typ[types.String]}, *name)
+	assert.Equal(t, *name, Column{Name: "name", FieldName: "Name", BusinessKey: true, Table: t1, Type: types.Typ[types.String], charSet: []rune("abcd"), length: 8, format: stringKindBasic, TestValuer: valuerString{length: 8, charSet: []rune("abcd"), kind: stringKindBasic}})
 
-	// Table: table1, Column: name
+	// Table: table1, Column: deleted_at
 	deletedAt, err := t1.GetColumn("deleted_at")
 	require.NoError(t, err)
 	require.NotNil(t, deletedAt)
-
 	assert.Equal(t, "database/sql.NullTime", deletedAt.Type.String())
-	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SQLType: "datetime", SoftDelete: true, Table: t1}, *deletedAt)
+	columnCompare(true, "database/sql.NullTime", Column{Name: "deleted_at", FieldName: "deleted_at", SoftDelete: true, Table: t1, TestValuer: valuerTime{}}, *deletedAt)
+
+	// Table: table1, Column: should_be_json
+	sbj, err := t1.GetColumn("should_be_json")
+	require.NoError(t, err)
+	require.NotNil(t, sbj)
+	assert.Equal(t, *sbj, Column{Name: "should_be_json", FieldName: "ShouldBeJSON", Table: t1, TestValuer: valuerString{length: defaultStringLength, kind: stringKindJSON, charSet: defaultCharSet}, Type: types.Typ[types.String], format: stringKindJSON})
+
+	// Table: table1, Column: should_be_uuid
+	sbu, err := t1.GetColumn("should_be_uuid")
+	require.NoError(t, err)
+	require.NotNil(t, sbu)
+	assert.Equal(t, *sbu, Column{Name: "should_be_uuid", FieldName: "ShouldBeUUID", Table: t1, TestValuer: valuerString{length: defaultStringLength, kind: stringKindUUID, charSet: defaultCharSet}, Type: types.Typ[types.String], format: stringKindUUID})
 
 	assert.Equal(t, "table2", t2.Name)
 	assert.False(t, t2.SkipTests)
@@ -319,12 +397,12 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	id2, err := t2.GetColumn("id")
 	require.NoError(t, err)
 	require.NotNil(t, id2)
-	columnCompare(true, "", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, SQLType: "int", Table: t2, Type: types.Typ[types.Int]}, *id2)
+	columnCompare(true, "int", Column{Name: "id", FieldName: "Id", PrimaryKey: true, AutoIncrement: true, Table: t2, Type: types.Typ[types.Int], TestValuer: valuerNumeric{max: 32}}, *id2)
 
 	table1Id, err := t2.GetColumn("table1_id")
 	require.NoError(t, err)
 	require.NotNil(t, table1Id)
-	columnCompare(true, "", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, SQLType: "int", Table: t2, Type: types.Typ[types.Int], fk: "table1.id"}, *table1Id)
+	columnCompare(true, "int", Column{Name: "table1_id", FieldName: "Table1Id", ForeignKey: id, Table: t2, Type: types.Typ[types.Int], fk: "table1.id", TestValuer: valuerNumeric{max: 32}}, *table1Id)
 }
 
 func TestNewDBModel_SadPath(t *testing.T) {
@@ -337,13 +415,13 @@ func TestNewDBModel_SadPath(t *testing.T) {
 			"package main",
 			"// gosqlgen: ",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id; int; pk ai\"`",
+			"Id int `gosqlgen:\"id;pk;ai\"`",
 			"}"}, "\n"),
 			expectedError: ErrEmptyTablename},
 		{name: "valid struct with no table annotation should be skipped", content: strings.Join([]string{
 			"package main",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id; int; pk ai\"`",
+			"Id int `gosqlgen:\"id;pk;ai\"`",
 			"}"}, "\n"),
 			expectedError: nil},
 		{name: "no tag found for column", content: strings.Join([]string{
@@ -358,9 +436,9 @@ func TestNewDBModel_SadPath(t *testing.T) {
 			"package main",
 			"// gosqlgen: table",
 			"type Table1 struct {",
-			"Id int `gosqlgen:\"id\"`",
+			"Id int `gosqlgen:\"\"`",
 			"}"}, "\n"),
-			expectedError: ErrTagFieldNumber},
+			expectedError: ErrEmptyTag},
 	}
 
 	for _, tt := range cases {
@@ -466,4 +544,86 @@ func TestTablePkAndBk(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTagListContent(t *testing.T) {
+	cases := []struct {
+		name        string
+		tag         string
+		values      []string
+		expectedErr error
+	}{
+		{name: "valid", tag: "tag (val1,val2)", values: []string{"val1", "val2"}},
+		{name: "invalid bad position", tag: "tag tag (val1,val2) tag tag", expectedErr: ErrFlagFormat},
+		{name: "valid padded", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
+		{name: "valid padded deduplicated", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
+		{name: "valid single char padded deduplicated", tag: "  tag   ( a , a , b )  ", values: []string{"a", "b"}},
+		{name: "invalid missing start paren", tag: "tag a,b)", expectedErr: ErrFlagFormat},
+		{name: "invalid missing end paren", tag: "tag (a,b", expectedErr: ErrFlagFormat},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			content, err := tagListContent(tt.tag)
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.EqualValues(t, tt.values, content)
+			}
+		})
+	}
+}
+
+func TestTagInt(t *testing.T) {
+	cases := []struct {
+		name        string
+		tag         string
+		value       int
+		expectedErr error
+	}{
+		{name: "valid", tag: "tag 123", value: 123},
+		{name: "valid padded", tag: "  tag   123", value: 123},
+		{name: "invalid not an int", tag: "tag 123s", expectedErr: ErrFlagFormat},
+		{name: "invalid not an int", tag: "tag 123.123", expectedErr: ErrFlagFormat},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tagInt(tt.tag)
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.value, value)
+			}
+		})
+	}
+}
+
+func TestTagFloat(t *testing.T) {
+	cases := []struct {
+		name        string
+		tag         string
+		value       float64
+		expectedErr error
+	}{
+		{name: "valid", tag: "tag 1.23", value: 1.23},
+		{name: "valid padded", tag: "  tag   1.23", value: 1.23},
+		{name: "invalid not a float", tag: "tag 1.23s", expectedErr: ErrFlagFormat},
+		{name: "valid int", tag: "tag 123", value: 123},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tagFloat(tt.tag)
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.value, value)
+			}
+		})
+	}
+
 }
