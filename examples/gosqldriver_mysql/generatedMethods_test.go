@@ -98,6 +98,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 		assertEqual(t, tbl_addresses_fdleaghl, gotByPk)
 
 		// Get By Business Keys
+
 		tbl_addresses_fdleaghl.Address = "amoV3Md9eOJ6mcoc48krMLb9BbiAE9g5"
 		err = tbl_addresses_fdleaghl.updateByBusinessKeys(ctx, testDb)
 		requireNoError(t, err)
@@ -272,6 +273,7 @@ func TestGoSQLGen_Country(t *testing.T) {
 		assertEqual(t, tbl_countries_iggalckf, gotByPk)
 
 		// Get By Business Keys
+
 		tbl_countries_iggalckf.Name = "aptL18capRf4ATeS7fhcRyWyV0PglS4I"
 		tbl_countries_iggalckf.GPS = "aBE1OBdIYL6iVdTCeqPm27i6o2RGS30i"
 		tbl_countries_iggalckf.Continent = "Asia"
@@ -349,6 +351,7 @@ func TestGoSQLGen_User(t *testing.T) {
 		assertEqual(t, tbl_users_gdcefldb, gotByPk)
 
 		// Get By Business Keys
+
 		tbl_users_gdcefldb.Name = []byte(`ajw3rNVR0Cd9oSWJRGeQ15sepiKXuXFg`)
 		tbl_users_gdcefldb.payload = []byte(`{"SadynJJ8":"snkpflv3", "6oXPblS5":"y3APnfBi"}`)
 		tbl_users_gdcefldb.Age = sql.NullInt32{Valid: true, Int32: 1}
