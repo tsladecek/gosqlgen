@@ -131,30 +131,34 @@ func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []str
 }
 
 func (v valuerString) basic(prev string) (TestValue, error) {
-	if len(v.valueSet) > 0 {
-		if len(v.valueSet) == 1 {
-			return TestValue{}, fmt.Errorf("%w: can not infer new value since the value set contains only one item", ErrValuer)
-		}
-
-		if v.valueSet[0] == prev {
-			return TestValue{Value: v.valueSet[1]}, nil
-		}
-		return TestValue{v.valueSet[0]}, nil
-	}
-
 	if prev == "" {
 		return TestValue{Value: v.randomString(v.length)}, nil
 	}
 
-	for _, c := range v.charSet {
-		if rune(prev[0]) != c {
-			out := []rune(prev)
-			out[0] = c
-			return TestValue{Value: string(out)}, nil
+	out := make([]rune, v.length)
+	for i := range v.length {
+
+		charSetWithoutChar := make([]rune, 0)
+		if i < len(prev) {
+			idx := 0
+			for _, j := range v.charSet {
+				if j != rune(prev[i]) {
+					charSetWithoutChar = append(charSetWithoutChar, v.charSet[idx])
+					idx++
+				}
+			}
+		} else {
+			charSetWithoutChar = v.charSet
 		}
+
+		if len(charSetWithoutChar) == 0 {
+			return TestValue{}, fmt.Errorf("%w: can not infer new basic string value", ErrValuer)
+		}
+
+		out[i] = charSetWithoutChar[RandomInt(len(charSetWithoutChar))]
 	}
 
-	return TestValue{}, fmt.Errorf("%w: can not infer new basic string value", ErrValuer)
+	return TestValue{Value: string(out)}, nil
 }
 
 func (v valuerString) enum(prev string) (TestValue, error) {
