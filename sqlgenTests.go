@@ -23,7 +23,7 @@ type insertedTable struct {
 
 func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*insertedTable, error) {
 	d := []string{}
-	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, RandomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0), table: t}
+	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, RandomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0), table: t, children: make([]*insertedTable, 0)}
 
 	for _, c := range t.Columns {
 		if c.PrimaryKey && c.AutoIncrement {
@@ -69,8 +69,8 @@ func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*ins
 	}
 
 	fmt.Fprintf(w, `%s := %s{%s}
-		err = %s.insert(ctx, testDb)
-		requireNoError(t, err)
+err = %s.insert(ctx, testDb)
+requireNoError(t, err)
 `, it.varName, t.StructName, strings.Join(d, ", "), it.varName)
 
 	return it, nil
@@ -97,64 +97,71 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 	res := []string{}
 	var requiredInserts bytes.Buffer
 
-	newInserted := &insertedTable{varName: previouslyInserted.varName, data: make([]insertedValue, 0)}
-	for _, v := range previouslyInserted.data {
-		if v.column.PrimaryKey || v.column.BusinessKey || v.column.SoftDelete {
+	newInserted := &insertedTable{varName: previouslyInserted.varName, data: make([]insertedValue, 0), children: make([]*insertedTable, 0), table: previouslyInserted.table}
+	for _, col := range previouslyInserted.table.Columns {
+		if col.PrimaryKey && col.AutoIncrement {
 			continue
 		}
 
-		fmt.Printf("%+v\n", v.column)
+		if col.ForeignKey == nil {
+			if col.SoftDelete {
+				continue
+			}
 
-		var newValue *TestValue
-
-		if v.column.ForeignKey != nil {
-			for _, c := range previouslyInserted.children {
-				if c.table != v.column.ForeignKey.Table {
-					fmt.Printf("%s != %s (%p != %p)", c.table.Name, v.column.ForeignKey.Table.Name, c.table, v.column.ForeignKey.Table)
-					continue
-				}
-
-				it, err := c.table.testInsert(&requiredInserts, c)
-				if err != nil {
-					return "", nil, fmt.Errorf("%w: when inserting table %s for testing of update on foreign key %s", err, c.table.Name, v.column.Name)
-				}
-
-				for _, iv := range it.data {
-					if iv.column != v.column.ForeignKey {
-						continue
-					}
-
-					newValue = &iv.value
+			// must be included in data
+			var v *insertedValue
+			for _, vv := range previouslyInserted.data {
+				if vv.column == col {
+					v = &vv
 					break
 				}
-
-				break
 			}
 
-		} else {
-			nv, err := v.column.TestValuer.New(v.value)
+			if v == nil {
+				return "", nil, fmt.Errorf("object TestValue not present in previously inserted data for table=%s, column=%s", previouslyInserted.table.Name, col.Name)
+			}
+
+			newValue, err := col.TestValuer.New(v.value)
 			if err != nil {
-				return "", nil, fmt.Errorf("%w: when infering new value for table=%s, column=%s for test update method", err, v.column.Table.Name, v.column.Name)
+				return "", nil, fmt.Errorf("%w: when infering new value for table=%s, column=%s for test update method", err, col.Table.Name, col.Name)
 			}
-			newValue = &nv
+
+			newValueFormatted, err := newValue.Format(col.Type)
+			if err != nil {
+				return "", nil, fmt.Errorf("%w: when formatting new value for table=%s, column=%s for test update method", err, col.Table.Name, col.Name)
+			}
+
+			res = append(res, fmt.Sprintf("%s.%s = %s", previouslyInserted.varName, col.FieldName, newValueFormatted))
+			newInserted.data = append(newInserted.data, insertedValue{column: col, value: newValue})
+			continue
 		}
 
-		if newValue == nil {
-			return "", nil, fmt.Errorf("malformed previously inserted data - new value is nil for column=%s", v.column.Name)
+		// For FK columns, the new child tables must be inserted before referencing them
+		var insertedChild *insertedTable
+		for _, c := range previouslyInserted.children {
+			if c.table != col.ForeignKey.Table {
+				continue
+			}
+
+			it, err := c.table.testInsert(&requiredInserts, c)
+			if err != nil {
+				return "", nil, fmt.Errorf("%w: when inserting table %s for testing of update on foreign key %s", err, c.table.Name, col.Name)
+			}
+			insertedChild = it
+			break
 		}
 
-		newValueFormatted, err := newValue.Format(v.column.Type)
-		if err != nil {
-			return "", nil, fmt.Errorf("%w: when formatting new value for table=%s, column=%s for test update method", err, v.column.Table.Name, v.column.Name)
+		if insertedChild == nil {
+			return "", nil, fmt.Errorf("fk table not found in children of previously inserted table: table=%s, column=%s", col.ForeignKey.Table.Name, col.Name)
 		}
 
-		res = append(res, fmt.Sprintf("%s.%s = %s", previouslyInserted.varName, v.column.FieldName, newValueFormatted))
-		newInserted.data = append(newInserted.data, insertedValue{column: v.column, value: *newValue})
+		newInserted.children = append(newInserted.children, insertedChild)
+		res = append(res, fmt.Sprintf("%s.%s = %s.%s", previouslyInserted.varName, col.FieldName, insertedChild.varName, col.ForeignKey.FieldName))
 	}
 
 	inserts := requiredInserts.String()
 	assignments := strings.Join(res, "\n")
-	return strings.Join([]string{inserts, assignments}, "\n"), newInserted, nil
+	return strings.TrimPrefix(strings.Join([]string{inserts, assignments}, "\n"), "\n"), newInserted, nil
 }
 
 func (ts *testSuite) newData(table *Table) (map[string]any, error) {
@@ -169,11 +176,11 @@ func (ts *testSuite) newData(table *Table) (map[string]any, error) {
 		return nil, fmt.Errorf("%w: when creating test inserts", err)
 	}
 
-	updatesPk, insertedData, err := updatedValues(insertedData)
+	updatesPk, insertedDataPK, err := updatedValues(insertedData)
 	if err != nil {
 		return nil, fmt.Errorf("%w: when creating update template for pks", err)
 	}
-	updatesBk, insertedData, err := updatedValues(insertedData)
+	updatesBk, _, err := updatedValues(insertedDataPK)
 	if err != nil {
 		return nil, fmt.Errorf("%w: when creating update template for pks", err)
 	}

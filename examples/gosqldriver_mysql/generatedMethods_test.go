@@ -51,13 +51,13 @@ func TestGoSQLGen_Address(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_users_afhjdbje := User{RawId: 1, Id: "aWi3c0x9oly0QA1aLUYnrgpudCjDJAMh", Name: []byte(`arBJdQglBLIKe1EvHJ1F6QAcW8RxvR2Q`), payload: []byte(`{"Z1boNKVg":"mkY8RZVv", "X1OIKgtQ":"oBUjybDN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		tbl_users_afhjdbje := User{Id: "aWi3c0x9oly0QA1aLUYnrgpudCjDJAMh", Name: []byte(`arBJdQglBLIKe1EvHJ1F6QAcW8RxvR2Q`), payload: []byte(`{"Z1boNKVg":"mkY8RZVv", "X1OIKgtQ":"oBUjybDN"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
 		err = tbl_users_afhjdbje.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_countries_hckbehbb := Country{RawId: 1, Id: "awUntc8VYIilMjgTMbgFix5wcHvmxrIy", Name: "a7STJ6zawZmWmh5BZKnZXhpDjaYIzKul", GPS: "alvtsJdtQz95P1DarHEv9UHFEKrioGhL", Continent: "Asia"}
+		tbl_countries_hckbehbb := Country{Id: "awUntc8VYIilMjgTMbgFix5wcHvmxrIy", Name: "a7STJ6zawZmWmh5BZKnZXhpDjaYIzKul", GPS: "alvtsJdtQz95P1DarHEv9UHFEKrioGhL", Continent: "Asia"}
 		err = tbl_countries_hckbehbb.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_acfiabjk := Address{RawId: 1, Id: "aO6LLoe2pJPGKfbVdK963QHSTyMm6frz", Address: "ae2IeH0xPkFowPZo2x2eu65DQYk9xn9v", UserId: tbl_users_afhjdbje.RawId, CountryId: tbl_countries_hckbehbb.RawId}
+		tbl_addresses_acfiabjk := Address{Id: "aO6LLoe2pJPGKfbVdK963QHSTyMm6frz", Address: "ae2IeH0xPkFowPZo2x2eu65DQYk9xn9v", UserId: tbl_users_afhjdbje.RawId, CountryId: tbl_countries_hckbehbb.RawId}
 		err = tbl_addresses_acfiabjk.insert(ctx, testDb)
 		requireNoError(t, err)
 
@@ -77,59 +77,78 @@ func TestGoSQLGen_Address(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_users_lgbjghbb := User{RawId: 1, Id: "aZ9b5q16YX1mNEG0Uq9iuh7Q3Q5yCKhf", Name: []byte(`agwoEBSG0zy3ztBtbf2R15tz3bo3c8W9`), payload: []byte(`{"upFAigTL":"TiVtyV7t", "RLGZqSyf":"NNquLIED"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_lgbjghbb.insert(ctx, testDb)
+		tbl_users_fidgjkfd := User{Id: "aHwiU9TWAsFtnlXmdv2qwXQrykhhMgGZ", Name: []byte(`aoZ1Bs7Mkm6E2JXWnyh5lDOfXlwz6Rjs`), payload: []byte(`{"EsuQO5ys":"21pgNZbA", "nLhKZihm":"cnDl47tr"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_fidgjkfd.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_countries_fglklegb := Country{RawId: 1, Id: "a3egctszYq10dhIaOwS0Rxuy1ORqPSkH", Name: "axpISdeQifrDYBS5pD4wcRUCm4IKRg6w", GPS: "a2G3Pecdbq0RfaWswgjJaMGy9rbhIxl4", Continent: "Asia"}
-		err = tbl_countries_fglklegb.insert(ctx, testDb)
+		tbl_countries_gkfhbfec := Country{Id: "anZcdgRTnokDpDrXeDyXat8eyZ9Ct4PA", Name: "agBGiL5jDVjjX8iHDmvNXyZPFPeVAZo8", GPS: "aYLXDbH0IyuN78LkLJC6VyEcn04qTTP5", Continent: "Asia"}
+		err = tbl_countries_gkfhbfec.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_fdleaghl := Address{RawId: 1, Id: "absMer9Bt6YACfJ7G8O5ui46zFdcJZoU", Address: "amoV3Md9eOJ6mcoc48krMLb9BbiAE9g5", UserId: tbl_users_lgbjghbb.RawId, CountryId: tbl_countries_fglklegb.RawId}
-		err = tbl_addresses_fdleaghl.insert(ctx, testDb)
+		tbl_addresses_ehbfedfj := Address{Id: "aHXmSjetJDK0AMFq2MpxdhnJlPKaKh9R", Address: "aOHeMii5AvyjkOIkaodvHsf29sTCzpSL", UserId: tbl_users_fidgjkfd.RawId, CountryId: tbl_countries_gkfhbfec.RawId}
+		err = tbl_addresses_ehbfedfj.insert(ctx, testDb)
 		requireNoError(t, err)
 
-		tbl_addresses_fdleaghl.Address = "bmoV3Md9eOJ6mcoc48krMLb9BbiAE9g5"
-		err = tbl_addresses_fdleaghl.updateByPrimaryKeys(ctx, testDb)
+		tbl_users_bajbacbg := User{Id: "bHwiU9TWAsFtnlXmdv2qwXQrykhhMgGZ", Name: []byte(`boZ1Bs7Mkm6E2JXWnyh5lDOfXlwz6Rjs`), payload: []byte(`{"vjRyLxjA":"8VkW49dr", "fPXDuBaN":"pfUlVNpB"}`), Age: sql.NullInt32{Valid: true, Int32: 0}, DrivesCar: sql.NullBool{Valid: true, Bool: false}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_bajbacbg.insert(ctx, testDb)
+		requireNoError(t, err)
+		tbl_countries_ijacgale := Country{Id: "bnZcdgRTnokDpDrXeDyXat8eyZ9Ct4PA", Name: "bgBGiL5jDVjjX8iHDmvNXyZPFPeVAZo8", GPS: "bYLXDbH0IyuN78LkLJC6VyEcn04qTTP5", Continent: "Europe"}
+		err = tbl_countries_ijacgale.insert(ctx, testDb)
+		requireNoError(t, err)
+
+		tbl_addresses_ehbfedfj.Id = "bHXmSjetJDK0AMFq2MpxdhnJlPKaKh9R"
+		tbl_addresses_ehbfedfj.Address = "bOHeMii5AvyjkOIkaodvHsf29sTCzpSL"
+		tbl_addresses_ehbfedfj.UserId = tbl_users_bajbacbg.RawId
+		tbl_addresses_ehbfedfj.CountryId = tbl_countries_ijacgale.RawId
+		err = tbl_addresses_ehbfedfj.updateByPrimaryKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := Address{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_addresses_fdleaghl.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_addresses_ehbfedfj.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_fdleaghl, gotByPk)
+		assertEqual(t, tbl_addresses_ehbfedfj, gotByPk)
 
 		// Get By Business Keys
+		tbl_users_dbecbgkg := User{Id: "aHwiU9TWAsFtnlXmdv2qwXQrykhhMgGZ", Name: []byte(`aoZ1Bs7Mkm6E2JXWnyh5lDOfXlwz6Rjs`), payload: []byte(`{"7i8jPHar":"M3qduSUo", "NkK676HW":"XMCR133w"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_dbecbgkg.insert(ctx, testDb)
+		requireNoError(t, err)
+		tbl_countries_fflabhah := Country{Id: "anZcdgRTnokDpDrXeDyXat8eyZ9Ct4PA", Name: "agBGiL5jDVjjX8iHDmvNXyZPFPeVAZo8", GPS: "aYLXDbH0IyuN78LkLJC6VyEcn04qTTP5", Continent: "Asia"}
+		err = tbl_countries_fflabhah.insert(ctx, testDb)
+		requireNoError(t, err)
 
-		tbl_addresses_fdleaghl.Address = "amoV3Md9eOJ6mcoc48krMLb9BbiAE9g5"
-		err = tbl_addresses_fdleaghl.updateByBusinessKeys(ctx, testDb)
+		tbl_addresses_ehbfedfj.Id = "aHXmSjetJDK0AMFq2MpxdhnJlPKaKh9R"
+		tbl_addresses_ehbfedfj.Address = "aOHeMii5AvyjkOIkaodvHsf29sTCzpSL"
+		tbl_addresses_ehbfedfj.UserId = tbl_users_dbecbgkg.RawId
+		tbl_addresses_ehbfedfj.CountryId = tbl_countries_fflabhah.RawId
+		err = tbl_addresses_ehbfedfj.updateByBusinessKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		gotByBk := Address{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_fdleaghl.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_ehbfedfj.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_fdleaghl, gotByBk)
+		assertEqual(t, tbl_addresses_ehbfedfj, gotByBk)
 
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_users_aflbekhc := User{RawId: 1, Id: "a9v9RNreyqkCUPUfjsUL8ccy6gnno2CE", Name: []byte(`axRvASzjUzU3YTva9Ll6ntrIYHBwNHwF`), payload: []byte(`{"vkjzNLD1":"rv3fJd32", "6bcr4x0q":"OFl1kVzL"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_aflbekhc.insert(ctx, testDb)
+		tbl_users_fffkaghc := User{Id: "a8gZ6kx5YDj3SxN2bkM1hUiDMbX3d1tP", Name: []byte(`atqsZ4TV0wxkCKqmtOgK8UXhhw0FgXH9`), payload: []byte(`{"9fVubQEb":"Lahe3fKI", "beWKMRPP":"9IOI6J4Z"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_fffkaghc.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_countries_dbhaehcd := Country{RawId: 1, Id: "aDK0AMFq2MpxdhnJlPKaKh9RuOHeMii5", Name: "avyjkOIkaodvHsf29sTCzpSLl6lY9ijP", GPS: "aHwiU9TWAsFtnlXmdv2qwXQrykhhMgGZ", Continent: "Asia"}
-		err = tbl_countries_dbhaehcd.insert(ctx, testDb)
+		tbl_countries_acbfgfgh := Country{Id: "aYZ1LGqqzMYVOHbUFQVvkxdJmFx6Mjuq", Name: "aER3KpBg0VSqaY3Q3cGaIiKK4Kp6YDAE", GPS: "aEASjhS3BrQkiY2UePzNm6mJBFnABIHR", Continent: "Asia"}
+		err = tbl_countries_acbfgfgh.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_lbfeccdd := Address{RawId: 1, Id: "a7QPCVqDOK8ht2XHs1TGI5ml8vp9cIUH", Address: "a4PBd7UodR3tH0wnrQBmyUM4GdcJSJTr", UserId: tbl_users_aflbekhc.RawId, CountryId: tbl_countries_dbhaehcd.RawId}
-		err = tbl_addresses_lbfeccdd.insert(ctx, testDb)
+		tbl_addresses_fjlecakc := Address{Id: "a4hTKNWtSiaMsdjFLsuWSoFqKyM3bDjw", Address: "a8sJg2qScKVyGxzBcmkICaJJFbShZWz1", UserId: tbl_users_fffkaghc.RawId, CountryId: tbl_countries_acbfgfgh.RawId}
+		err = tbl_addresses_fjlecakc.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		got := Address{}
-		err = got.getByPrimaryKeys(ctx, testDb, tbl_addresses_lbfeccdd.RawId)
+		err = got.getByPrimaryKeys(ctx, testDb, tbl_addresses_fjlecakc.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_lbfeccdd, got)
+		assertEqual(t, tbl_addresses_fjlecakc, got)
 
 		err = got.delete(ctx, testDb)
 		requireNoError(t, err)
 		gotAfterDelete := Address{}
-		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_addresses_lbfeccdd.RawId)
+		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_addresses_fjlecakc.RawId)
 		requireError(t, err)
 	})
 
@@ -140,92 +159,115 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_users_hdjdfigj := User{RawId: 1, Id: "amvNXyZPFPeVAZo8EYLXDbH0IyuN78Lk", Name: []byte(`aJC6VyEcn04qTTP5fJmogQYq9QWmJ3IX`), payload: []byte(`{"3H0F5UJW":"DfBBMFRJ", "1VTIWC80":"T2eP46lW"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_hdjdfigj.insert(ctx, testDb)
+		tbl_users_jbdkhjlh := User{Id: "aC63KdAsmxmmNxzzJc04ytW8YUTO1QoC", Name: []byte(`aCKi7ZaTm8IdzIZa1jw3rNVR0Cd9oSWJ`), payload: []byte(`{"BRuTLRzL":"9F3ByxLf", "JrCoSY9n":"KX09UebW"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_jbdkhjlh.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_countries_hlceihfj := Country{RawId: 1, Id: "aLTnLHNuQH1Ehs33nXXEo2C1hM9BZpTU", Name: "ac24yT4sa8fRW7LUvjRyLxjA8VkW49dr", GPS: "aPXDuBaNpfUlVNpBuXOuEuvYcxlHNske", Continent: "Asia"}
-		err = tbl_countries_hlceihfj.insert(ctx, testDb)
+		tbl_countries_gglgjfil := Country{Id: "avmj8NtdddhqBhhHUfPP8PISYU7aUOgf", Name: "al0B15vNSadynJJ8snkpflv36oXPblS5", GPS: "a3APnfBiUYjLyrzgC29snKC5wrLgpQR6", Continent: "Asia"}
+		err = tbl_countries_gglgjfil.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_idhghdde := Address{RawId: 1, Id: "aLhKZihmcnDl47trqslnLHWcenZcdgRT", Address: "aokDpDrXeDyXat8eyZ9Ct4PANgBGiL5j", UserId: tbl_users_hdjdfigj.RawId, CountryId: tbl_countries_hlceihfj.RawId}
-		err = tbl_addresses_idhghdde.insert(ctx, testDb)
+		tbl_addresses_dfbgjdba := Address{Id: "az80sey3kdCPx3ndAhPXJ3jWwExn9r3k", Address: "aVMfeSRcH3K4V8A624WAivbbJJd8zwU9", UserId: tbl_users_jbdkhjlh.RawId, CountryId: tbl_countries_gglgjfil.RawId}
+		err = tbl_addresses_dfbgjdba.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_book_jbebakih := AddressBook{RawId: 1, Id: "a1k6DlB9uwyEISwOTfQnmehAEsuQO5ys", AddressId: tbl_addresses_idhghdde.RawId}
-		err = tbl_addresses_book_jbebakih.insert(ctx, testDb)
+		tbl_addresses_book_ialkdlib := AddressBook{Id: "aCTc5LWViD32ieHKBBqgdoKd5IyijuNo", AddressId: tbl_addresses_dfbgjdba.RawId}
+		err = tbl_addresses_book_ialkdlib.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := AddressBook{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_jbebakih.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_ialkdlib.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_book_jbebakih, gotByPk)
+		assertEqual(t, tbl_addresses_book_ialkdlib, gotByPk)
 
 		// Get By Business Keys
 		gotByBk := AddressBook{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_book_jbebakih.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_book_ialkdlib.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_book_jbebakih, gotByBk)
+		assertEqual(t, tbl_addresses_book_ialkdlib, gotByBk)
 		assertEqual(t, gotByPk, gotByBk)
 
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_users_giblcgda := User{RawId: 1, Id: "ayXwO5xxlhapuCgjbQyqPjQHtVbiAthX", Name: []byte(`a2t1Mr5bBK6FE7N2iM5mNNBVeSqnSeaq`), payload: []byte(`{"XMCR133w":"JxrqvP29", "QkuNTerD":"ywXoLDNq"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_giblcgda.insert(ctx, testDb)
+		tbl_users_flbkajck := User{Id: "a9e8xdCaD3wlm55yicfO6KeTyEqE0yYb", Name: []byte(`btLou15nA5SKf5wyMBmcwRHEkai3vpby`), payload: []byte(`{"bxnhiLLk":"IG70auGk", "dCFELhsq":"OVypfCYH"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_flbkajck.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_countries_backlhdb := Country{RawId: 1, Id: "aDrQgRcq68zdPo66oOWEg8s8tLYaEnwm", Name: "augLnfYwBGFH6Jlgj4UM90nLHE5LZiJ4", GPS: "aKczb8X1eFRfASR9ZTcGsuanPlu52pFa", Continent: "Asia"}
-		err = tbl_countries_backlhdb.insert(ctx, testDb)
+		tbl_countries_lkbkdagd := Country{Id: "aCFGRiSklprdP4vYD8nLSWM8xG0vmlJ4", Name: "aqcdvnK9XAx3TwewIdXAIWXcGjiAvgzo", GPS: "a0J0aQqIzYn4FEP6pWWrqR5WCHoPFFlA", Continent: "Asia"}
+		err = tbl_countries_lkbkdagd.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_ijbadjdk := Address{RawId: 1, Id: "aJfguznafn70ZIIdK2VwnDTEZQjDB1Hu", Address: "a8vbk67tXp2G92sSMDYObMUiPg33LgtU", UserId: tbl_users_giblcgda.RawId, CountryId: tbl_countries_backlhdb.RawId}
-		err = tbl_addresses_ijbadjdk.insert(ctx, testDb)
+		tbl_addresses_dkggbeed := Address{Id: "aUGY9vrhwE8UdYzRGMcSI8iztuHfs0SW", Address: "apKMdvHgSnsrjabnFu0ULZ7pnnhuelBw", UserId: tbl_users_flbkajck.RawId, CountryId: tbl_countries_lkbkdagd.RawId}
+		err = tbl_addresses_dkggbeed.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_book_aafcjkge := AddressBook{RawId: 1, Id: "aOgH6f7Nl4cSsWspQFE04E56VqzGKBHf", AddressId: tbl_addresses_ijbadjdk.RawId}
-		err = tbl_addresses_book_aafcjkge.insert(ctx, testDb)
+		tbl_addresses_book_jcfaligg := AddressBook{Id: "aJd0e6YL781nkUTnUVNOppbxCI7np7rZ", AddressId: tbl_addresses_dkggbeed.RawId}
+		err = tbl_addresses_book_jcfaligg.insert(ctx, testDb)
 		requireNoError(t, err)
 
-		err = tbl_addresses_book_aafcjkge.updateByPrimaryKeys(ctx, testDb)
+		tbl_users_dehgjdad := User{Id: "anRqsosk3qyC7trqjj8G7m84CHNNp6Tl", Name: []byte(`aJdhlfZO7LEKb3hnbGCzURQAHwQagE98`), payload: []byte(`{"1ZcSLf7V":"7Zwspz2h", "OLAjtSBb":"2Hb7Ihn3"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_dehgjdad.insert(ctx, testDb)
+		requireNoError(t, err)
+		tbl_countries_jacfkfjh := Country{Id: "acjy6g0EEhJeAFJovGvqKufiy8T7DsEq", Name: "a46tk6rprivqUN2fww6pWAVsuSHbTNvE", GPS: "aq7PavUMYKX4DFXaPh5cPNVXXun9oll5", Continent: "Asia"}
+		err = tbl_countries_jacfkfjh.insert(ctx, testDb)
+		requireNoError(t, err)
+		tbl_addresses_ffacllfi := Address{Id: "bUGY9vrhwE8UdYzRGMcSI8iztuHfs0SW", Address: "bpKMdvHgSnsrjabnFu0ULZ7pnnhuelBw", UserId: tbl_users_dehgjdad.RawId, CountryId: tbl_countries_jacfkfjh.RawId}
+		err = tbl_addresses_ffacllfi.insert(ctx, testDb)
+		requireNoError(t, err)
+
+		tbl_addresses_book_jcfaligg.Id = "bJd0e6YL781nkUTnUVNOppbxCI7np7rZ"
+		tbl_addresses_book_jcfaligg.AddressId = tbl_addresses_ffacllfi.RawId
+		err = tbl_addresses_book_jcfaligg.updateByPrimaryKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := AddressBook{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_aafcjkge.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_jcfaligg.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_book_aafcjkge, gotByPk)
+		assertEqual(t, tbl_addresses_book_jcfaligg, gotByPk)
 
 		// Get By Business Keys
+		tbl_users_jkdekjjf := User{Id: "akI01CbYJwlrRJaupNl1rCRUgXQbcfnb", Name: []byte(`aCu7AHPG3aYEKiqoHjlnFNa3uCJsuQeu`), payload: []byte(`{"QSVNPnrZ":"tfJ1bFPx", "mDXqtlN5":"j2HFR8jT"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_jkdekjjf.insert(ctx, testDb)
+		requireNoError(t, err)
+		tbl_countries_dclcelbg := Country{Id: "aI2cKzrqG4UzF0c3tKeWoUVClfFnzFVZ", Name: "amdmWRNpUNIL0tglQcLUMxNEIsmE8UG7", GPS: "aLrWp0Ijo4V0tELYrPrr1iKH9HWXuLeI", Continent: "Asia"}
+		err = tbl_countries_dclcelbg.insert(ctx, testDb)
+		requireNoError(t, err)
+		tbl_addresses_ahggagcl := Address{Id: "aUGY9vrhwE8UdYzRGMcSI8iztuHfs0SW", Address: "apKMdvHgSnsrjabnFu0ULZ7pnnhuelBw", UserId: tbl_users_jkdekjjf.RawId, CountryId: tbl_countries_dclcelbg.RawId}
+		err = tbl_addresses_ahggagcl.insert(ctx, testDb)
+		requireNoError(t, err)
 
-		err = tbl_addresses_book_aafcjkge.updateByBusinessKeys(ctx, testDb)
+		tbl_addresses_book_jcfaligg.Id = "aJd0e6YL781nkUTnUVNOppbxCI7np7rZ"
+		tbl_addresses_book_jcfaligg.AddressId = tbl_addresses_ahggagcl.RawId
+		err = tbl_addresses_book_jcfaligg.updateByBusinessKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		gotByBk := AddressBook{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_book_aafcjkge.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_addresses_book_jcfaligg.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_book_aafcjkge, gotByBk)
+		assertEqual(t, tbl_addresses_book_jcfaligg, gotByBk)
 
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_users_bgabklbh := User{RawId: 1, Id: "aPMi2AWhFrrm5GULoIzVl7SWr101doh9", Name: []byte(`afVubQEbLahe3fKIbeWKMRPP9IOI6J4Z`), payload: []byte(`{"mFx6Mjuq":"jER3KpBg", "0VSqaY3Q":"3cGaIiKK"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_bgabklbh.insert(ctx, testDb)
+		tbl_users_acjfekje := User{Id: "amyuxHdM8TdGBZ4kUAggH8iUg7MqHhLN", Name: []byte(`aZkvTK6yZdHIeR8eufwOiQUb6eCX0NU8`), payload: []byte(`{"oj4yCerx":"jFMDBaeM", "hqaFX6mp":"Ye6N54ay"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_acjfekje.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_countries_ggjcefei := Country{RawId: 1, Id: "aEASjhS3BrQkiY2UePzNm6mJBFnABIHR", Name: "aWvGa0vfzkcloeSjAvltEzrwYvIR9fC9", GPS: "aUtbQT2RKt2R6o3W74DQD3xZpZFrWDhs", Continent: "Asia"}
-		err = tbl_countries_ggjcefei.insert(ctx, testDb)
+		tbl_countries_biiclhif := Country{Id: "aiSbnWsh9vzHxtzMrHlwF5GOj6sKFkYz", Name: "aJsW5QLOFLZWL6jTcAp4uJsXrnGpZlW3", GPS: "aAgbulEEbTQCsXymYlMHZEf4ug1DQ7RU", Continent: "Asia"}
+		err = tbl_countries_biiclhif.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_bhgbhgjd := Address{RawId: 1, Id: "aP9eaUbEA8gZ6kx5YDj3SxN2bkM1hUiD", Address: "abX3d1tPwtqsZ4TV0wxkCKqmtOgK8UXh", UserId: tbl_users_bgabklbh.RawId, CountryId: tbl_countries_ggjcefei.RawId}
-		err = tbl_addresses_bhgbhgjd.insert(ctx, testDb)
+		tbl_addresses_agddhaih := Address{Id: "auyJjqGVJnhrPCJ1kFPEjuukHdOq82kf", Address: "amwx2m218E2RfLRcMyhKhhXnfd9baFs6", UserId: tbl_users_acjfekje.RawId, CountryId: tbl_countries_biiclhif.RawId}
+		err = tbl_addresses_agddhaih.insert(ctx, testDb)
 		requireNoError(t, err)
-		tbl_addresses_book_daaegkdg := AddressBook{RawId: 1, Id: "ayM3bDjwd8sJg2qScKVyGxzBcmkICaJJ", AddressId: tbl_addresses_bhgbhgjd.RawId}
-		err = tbl_addresses_book_daaegkdg.insert(ctx, testDb)
+		tbl_addresses_book_begflkhk := AddressBook{Id: "a8KGhhQk7H2jDQDC23rAXbNGsi3Zf1Uj", AddressId: tbl_addresses_agddhaih.RawId}
+		err = tbl_addresses_book_begflkhk.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		got := AddressBook{}
-		err = got.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_daaegkdg.RawId)
+		err = got.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_begflkhk.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_addresses_book_daaegkdg, got)
+		assertEqual(t, tbl_addresses_book_begflkhk, got)
 
 		err = got.delete(ctx, testDb)
 		requireNoError(t, err)
 		gotAfterDelete := AddressBook{}
-		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_daaegkdg.RawId)
+		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_addresses_book_begflkhk.RawId)
 		requireError(t, err)
 	})
 
@@ -236,71 +278,72 @@ func TestGoSQLGen_Country(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_countries_egiijlkb := Country{RawId: 1, Id: "aD0pVtjYZWE9q6UmQtmlb4RP3p8FydFS", Name: "aqggaV5hlk5fbz1xiEUMCGemdrY7oYHI", GPS: "bbnUmgJbFpaBtmUTay1kQfPknXu0ckN9", Continent: "Asia"}
-		err = tbl_countries_egiijlkb.insert(ctx, testDb)
+		tbl_countries_lfldklde := Country{Id: "amBjUUxalITAhRvwrzYDOK2yrXHEzJlV", Name: "atJSSWFwgQIlAPdGsCOhzotD0FmabThr", GPS: "azSTahVBhxgIc67BRZQHleAXF9Q9TX2j", Continent: "Asia"}
+		err = tbl_countries_lfldklde.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := Country{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_countries_egiijlkb.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_countries_lfldklde.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_countries_egiijlkb, gotByPk)
+		assertEqual(t, tbl_countries_lfldklde, gotByPk)
 
 		// Get By Business Keys
 		gotByBk := Country{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_countries_egiijlkb.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_countries_lfldklde.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_countries_egiijlkb, gotByBk)
+		assertEqual(t, tbl_countries_lfldklde, gotByBk)
 		assertEqual(t, gotByPk, gotByBk)
 
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_countries_iggalckf := Country{RawId: 1, Id: "aXfyHwRpxv3GqRTFsfdyJaYrfjKNhhGv", Name: "aptL18capRf4ATeS7fhcRyWyV0PglS4I", GPS: "aBE1OBdIYL6iVdTCeqPm27i6o2RGS30i", Continent: "Asia"}
-		err = tbl_countries_iggalckf.insert(ctx, testDb)
+		tbl_countries_alijjkhl := Country{Id: "amz3ft0n2u6kgqLBnYjJCrCniMv3nEd0", Name: "axFbDcJ8XkAbWSKYG0ofZZSeBsHef3OR", GPS: "a5KqOpstlt7PTqLnfW8Hcbn4J4373ape", Continent: "Asia"}
+		err = tbl_countries_alijjkhl.insert(ctx, testDb)
 		requireNoError(t, err)
 
-		tbl_countries_iggalckf.Name = "bptL18capRf4ATeS7fhcRyWyV0PglS4I"
-		tbl_countries_iggalckf.GPS = "bBE1OBdIYL6iVdTCeqPm27i6o2RGS30i"
-		tbl_countries_iggalckf.Continent = "Europe"
-		err = tbl_countries_iggalckf.updateByPrimaryKeys(ctx, testDb)
+		tbl_countries_alijjkhl.Id = "bmz3ft0n2u6kgqLBnYjJCrCniMv3nEd0"
+		tbl_countries_alijjkhl.Name = "bxFbDcJ8XkAbWSKYG0ofZZSeBsHef3OR"
+		tbl_countries_alijjkhl.GPS = "b5KqOpstlt7PTqLnfW8Hcbn4J4373ape"
+		tbl_countries_alijjkhl.Continent = "Europe"
+		err = tbl_countries_alijjkhl.updateByPrimaryKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := Country{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_countries_iggalckf.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_countries_alijjkhl.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_countries_iggalckf, gotByPk)
+		assertEqual(t, tbl_countries_alijjkhl, gotByPk)
 
 		// Get By Business Keys
-
-		tbl_countries_iggalckf.Name = "aptL18capRf4ATeS7fhcRyWyV0PglS4I"
-		tbl_countries_iggalckf.GPS = "aBE1OBdIYL6iVdTCeqPm27i6o2RGS30i"
-		tbl_countries_iggalckf.Continent = "Asia"
-		err = tbl_countries_iggalckf.updateByBusinessKeys(ctx, testDb)
+		tbl_countries_alijjkhl.Id = "amz3ft0n2u6kgqLBnYjJCrCniMv3nEd0"
+		tbl_countries_alijjkhl.Name = "axFbDcJ8XkAbWSKYG0ofZZSeBsHef3OR"
+		tbl_countries_alijjkhl.GPS = "a5KqOpstlt7PTqLnfW8Hcbn4J4373ape"
+		tbl_countries_alijjkhl.Continent = "Asia"
+		err = tbl_countries_alijjkhl.updateByBusinessKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		gotByBk := Country{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_countries_iggalckf.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_countries_alijjkhl.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_countries_iggalckf, gotByBk)
+		assertEqual(t, tbl_countries_alijjkhl, gotByBk)
 
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_countries_bjeicjcg := Country{RawId: 1, Id: "aRtVyhm8s6Nku2XUxskt3iwsPQgbwSR0", Name: "aiI68SFUEHuxNqMiapdSunMkJ3U5VVYh", GPS: "aMjgj7lcqWz65dX7syhciw06acOxfikN", Continent: "Asia"}
-		err = tbl_countries_bjeicjcg.insert(ctx, testDb)
+		tbl_countries_jfbkciah := Country{Id: "aVKFeIJcAYW2iqSELKMVKGuC19feOOuE", Name: "aj3MAoDBpSW2n3wExkcePiY5SlPCn8Qy", GPS: "aKbXwj4Ofy5GKqq027av2Oj6BXmX4ZgR", Continent: "Asia"}
+		err = tbl_countries_jfbkciah.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		got := Country{}
-		err = got.getByPrimaryKeys(ctx, testDb, tbl_countries_bjeicjcg.RawId)
+		err = got.getByPrimaryKeys(ctx, testDb, tbl_countries_jfbkciah.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_countries_bjeicjcg, got)
+		assertEqual(t, tbl_countries_jfbkciah, got)
 
 		err = got.delete(ctx, testDb)
 		requireNoError(t, err)
 		gotAfterDelete := Country{}
-		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_countries_bjeicjcg.RawId)
+		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_countries_jfbkciah.RawId)
 		requireError(t, err)
 	})
 
@@ -311,77 +354,78 @@ func TestGoSQLGen_User(t *testing.T) {
 	var err error
 
 	t.Run("getInsert", func(t *testing.T) {
-		tbl_users_ekdafkkg := User{RawId: 1, Id: "amMO3XNf0kfHcqzoleAnVMI8UBelUCxQ", Name: []byte(`agj20sf3W76eRry8TEgNjs8P79WCIJk7`), payload: []byte(`{"5IyijuNo":"j5rujb7s", "Wz80sey3":"kdCPx3nd"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_ekdafkkg.insert(ctx, testDb)
+		tbl_users_cjfalggb := User{Id: "aylrf9i4uvydF16W7seT3DeA7OUyjQZe", Name: []byte(`baXFrNWCiQRyT0ZbzZ5TJXuO8N4wYV5w`), payload: []byte(`{"fI8AX4t9":"f1HedGHF", "u63MSFpi":"LArsVRIr"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_cjfalggb.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := User{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_users_ekdafkkg.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_users_cjfalggb.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_users_ekdafkkg, gotByPk)
+		assertEqual(t, tbl_users_cjfalggb, gotByPk)
 
 		// Get By Business Keys
 		gotByBk := User{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_users_ekdafkkg.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_users_cjfalggb.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_users_ekdafkkg, gotByBk)
+		assertEqual(t, tbl_users_cjfalggb, gotByBk)
 		assertEqual(t, gotByPk, gotByBk)
 
 	})
 
 	t.Run("update", func(t *testing.T) {
-		tbl_users_gdcefldb := User{RawId: 1, Id: "ac04ytW8YUTO1QoCqCKi7ZaTm8IdzIZa", Name: []byte(`ajw3rNVR0Cd9oSWJRGeQ15sepiKXuXFg`), payload: []byte(`{"JrCoSY9n":"KX09UebW", "IGjyzRev":"5vmj8Ntd"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_gdcefldb.insert(ctx, testDb)
+		tbl_users_fhidfhee := User{Id: "acRTGRidnYXcm6MIpOAN4UczT7sLwgK9", Name: []byte(`a1FjT7a4N0JrbqLVCzNn8ivbwqALFQ9b`), payload: []byte(`{"S2HF4Tgx":"dX4voxJe", "nuQtV5fL":"DShTytUV"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_fhidfhee.insert(ctx, testDb)
 		requireNoError(t, err)
 
-		tbl_users_gdcefldb.Name = []byte(`bjw3rNVR0Cd9oSWJRGeQ15sepiKXuXFg`)
-		tbl_users_gdcefldb.payload = []byte(`{"ddhqBhhH":"UfPP8PIS", "YU7aUOgf":"Zl0B15vN"}`)
-		tbl_users_gdcefldb.Age = sql.NullInt32{Valid: true, Int32: 0}
-		tbl_users_gdcefldb.DrivesCar = sql.NullBool{Valid: true, Bool: false}
-		tbl_users_gdcefldb.Birthday = sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}
-		tbl_users_gdcefldb.Registered = time.Now().UTC().Truncate(time.Second)
-		err = tbl_users_gdcefldb.updateByPrimaryKeys(ctx, testDb)
+		tbl_users_fhidfhee.Id = "bcRTGRidnYXcm6MIpOAN4UczT7sLwgK9"
+		tbl_users_fhidfhee.Name = []byte(`b1FjT7a4N0JrbqLVCzNn8ivbwqALFQ9b`)
+		tbl_users_fhidfhee.payload = []byte(`{"xB6iAg66":"JHdWGXpf", "wl4iwovz":"1IGtmfGE"}`)
+		tbl_users_fhidfhee.Age = sql.NullInt32{Valid: true, Int32: 0}
+		tbl_users_fhidfhee.DrivesCar = sql.NullBool{Valid: true, Bool: false}
+		tbl_users_fhidfhee.Birthday = sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}
+		tbl_users_fhidfhee.Registered = time.Now().UTC().Truncate(time.Second)
+		err = tbl_users_fhidfhee.updateByPrimaryKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		// Get By Primary Keys
 		gotByPk := User{}
-		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_users_gdcefldb.RawId)
+		err = gotByPk.getByPrimaryKeys(ctx, testDb, tbl_users_fhidfhee.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_users_gdcefldb, gotByPk)
+		assertEqual(t, tbl_users_fhidfhee, gotByPk)
 
 		// Get By Business Keys
-
-		tbl_users_gdcefldb.Name = []byte(`ajw3rNVR0Cd9oSWJRGeQ15sepiKXuXFg`)
-		tbl_users_gdcefldb.payload = []byte(`{"SadynJJ8":"snkpflv3", "6oXPblS5":"y3APnfBi"}`)
-		tbl_users_gdcefldb.Age = sql.NullInt32{Valid: true, Int32: 1}
-		tbl_users_gdcefldb.DrivesCar = sql.NullBool{Valid: true, Bool: true}
-		tbl_users_gdcefldb.Birthday = sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}
-		tbl_users_gdcefldb.Registered = time.Now().UTC().Truncate(time.Second)
-		err = tbl_users_gdcefldb.updateByBusinessKeys(ctx, testDb)
+		tbl_users_fhidfhee.Id = "acRTGRidnYXcm6MIpOAN4UczT7sLwgK9"
+		tbl_users_fhidfhee.Name = []byte(`a1FjT7a4N0JrbqLVCzNn8ivbwqALFQ9b`)
+		tbl_users_fhidfhee.payload = []byte(`{"5zoIHBLi":"YLHzAw1e", "hF1tULud":"wI9QzyJQ"}`)
+		tbl_users_fhidfhee.Age = sql.NullInt32{Valid: true, Int32: 1}
+		tbl_users_fhidfhee.DrivesCar = sql.NullBool{Valid: true, Bool: true}
+		tbl_users_fhidfhee.Birthday = sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}
+		tbl_users_fhidfhee.Registered = time.Now().UTC().Truncate(time.Second)
+		err = tbl_users_fhidfhee.updateByBusinessKeys(ctx, testDb)
 		requireNoError(t, err)
 
 		gotByBk := User{}
-		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_users_gdcefldb.Id)
+		err = gotByBk.getByBusinessKeys(ctx, testDb, tbl_users_fhidfhee.Id)
 		requireNoError(t, err)
-		assertEqual(t, tbl_users_gdcefldb, gotByBk)
+		assertEqual(t, tbl_users_fhidfhee, gotByBk)
 
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		tbl_users_icbhidbg := User{RawId: 1, Id: "a29snKC5wrLgpQR6AF5EdnM32mxqVLgO", Name: []byte(`a8pTa9u2hPMuWsW8O71gYcYoAzUyfuSn`), payload: []byte(`{"yr82TgzZ":"jzftKWyo", "olYQpZZW":"WTmx4Dg1"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
-		err = tbl_users_icbhidbg.insert(ctx, testDb)
+		tbl_users_elbjbiii := User{Id: "aXiMuztIZLXTNwW651ZU8qeWm1ukSqdQ", Name: []byte(`aa220e1xjkqzoJLSlPVr5uuFhzfvEtTv`), payload: []byte(`{"zXb4pQKw":"i1C6ykyo", "KATXkyS8":"3CDstWce"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}, Registered: time.Now().UTC().Truncate(time.Second)}
+		err = tbl_users_elbjbiii.insert(ctx, testDb)
 		requireNoError(t, err)
 
 		got := User{}
-		err = got.getByPrimaryKeys(ctx, testDb, tbl_users_icbhidbg.RawId)
+		err = got.getByPrimaryKeys(ctx, testDb, tbl_users_elbjbiii.RawId)
 		requireNoError(t, err)
-		assertEqual(t, tbl_users_icbhidbg, got)
+		assertEqual(t, tbl_users_elbjbiii, got)
 
 		err = got.delete(ctx, testDb)
 		requireNoError(t, err)
 		gotAfterDelete := User{}
-		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_users_icbhidbg.RawId)
+		err = gotAfterDelete.getByPrimaryKeys(ctx, testDb, tbl_users_elbjbiii.RawId)
 		requireError(t, err)
 	})
 

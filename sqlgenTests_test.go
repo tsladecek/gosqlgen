@@ -6,7 +6,6 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"go/types"
 	"strings"
 	"testing"
 
@@ -55,6 +54,22 @@ func TestInsertsAndUpdatedValues(t *testing.T) {
 	require.NotNil(t, childrenTable)
 	require.NotNil(t, parentsTable)
 
+	ChildIdCol, err := childrenTable.GetColumn("id")
+	require.NoError(t, err)
+	require.NotNil(t, ChildIdCol)
+
+	ChildNameCol, err := childrenTable.GetColumn("name")
+	require.NoError(t, err)
+	require.NotNil(t, ChildNameCol)
+
+	ParentIdCol, err := parentsTable.GetColumn("id")
+	require.NoError(t, err)
+	require.NotNil(t, ParentIdCol)
+
+	ParentChildIdCol, err := parentsTable.GetColumn("child_id")
+	require.NoError(t, err)
+	require.NotNil(t, ParentChildIdCol)
+
 	t.Run("children inserts", func(t *testing.T) {
 		var w bytes.Buffer
 		it, err := childrenTable.testInsert(&w, nil)
@@ -63,23 +78,14 @@ func TestInsertsAndUpdatedValues(t *testing.T) {
 		assert.Equal(t, childrenTable, it.table)
 		assert.Empty(t, it.children)
 		assert.Len(t, it.data, 1)
+		assert.Equal(t, ChildNameCol, it.data[0].column)
 
-		idCol, err := childrenTable.GetColumn("id")
-		require.NoError(t, err)
-		require.NotNil(t, idCol)
-
-		nameCol, err := childrenTable.GetColumn("name")
-		require.NoError(t, err)
-		require.NotNil(t, nameCol)
-
-		assert.Equal(t, nameCol, it.data[0].column)
-
-		valueFormatted, err := it.data[0].value.Format(nameCol.Type)
+		valueFormatted, err := it.data[0].value.Format(ChildNameCol.Type)
 		require.NoError(t, err)
 		expected, err := format.Source(fmt.Appendf(nil, `%s := %s{%s: %s}
 err = %s.insert(ctx, testDb)
 requireNoError(t, err)
-`, it.varName, childrenTable.StructName, nameCol.FieldName, valueFormatted, it.varName))
+`, it.varName, childrenTable.StructName, ChildNameCol.FieldName, valueFormatted, it.varName))
 		require.NoError(t, err)
 		actual, err := format.Source(w.Bytes())
 		require.NoError(t, err)
@@ -96,20 +102,8 @@ requireNoError(t, err)
 		assert.Len(t, it.children, 1)
 		require.Len(t, it.data, 0) // FK column values are not saved because their value is injected dynamically
 
-		idCol, err := parentsTable.GetColumn("id")
-		require.NoError(t, err)
-		require.NotNil(t, idCol)
-
-		childIdCol, err := parentsTable.GetColumn("child_id")
-		require.NoError(t, err)
-		require.NotNil(t, childIdCol)
-
-		nameCol, err := childrenTable.GetColumn("name")
-		require.NoError(t, err)
-		require.NotNil(t, nameCol)
-
 		itChild := it.children[0]
-		valueFormatted, err := itChild.data[0].value.Format(types.Typ[types.String])
+		valueFormatted, err := itChild.data[0].value.Format(ChildNameCol.Type)
 		require.NoError(t, err)
 
 		require.NoError(t, err)
@@ -119,11 +113,66 @@ requireNoError(t, err)
 %s := %s{%s: %s.%s}
 err = %s.insert(ctx, testDb)
 requireNoError(t, err)
-`, itChild.varName, childrenTable.StructName, nameCol.FieldName, valueFormatted, itChild.varName, it.varName, parentsTable.StructName, childIdCol.FieldName, itChild.varName, childIdCol.ForeignKey.FieldName, it.varName))
+`, itChild.varName, childrenTable.StructName, ChildNameCol.FieldName, valueFormatted, itChild.varName, it.varName, parentsTable.StructName, ParentChildIdCol.FieldName, itChild.varName, ParentChildIdCol.ForeignKey.FieldName, it.varName))
 		require.NoError(t, err)
 		actual, err := format.Source(w.Bytes())
 		require.NoError(t, err, w.String())
 
 		assert.Equal(t, string(expected), string(actual))
+	})
+
+	t.Run("children updatedValues", func(t *testing.T) {
+		var w bytes.Buffer
+		it, err := childrenTable.testInsert(&w, nil)
+		require.NoError(t, err)
+
+		v, itu, err := updatedValues(it)
+		require.NoError(t, err)
+		require.NotNil(t, itu)
+		require.Len(t, itu.data, 1)
+		require.Len(t, it.data, 1)
+
+		prev, err := it.data[0].value.Format(ChildNameCol.Type)
+		require.NoError(t, err)
+
+		curr, err := itu.data[0].value.Format(ChildNameCol.Type)
+		require.NoError(t, err)
+
+		assert.NotEqual(t, prev, curr)
+		assert.Equal(t, v, fmt.Sprintf("%s.%s = %s", itu.varName, itu.data[0].column.FieldName, curr))
+	})
+
+	t.Run("parent updatedValues", func(t *testing.T) {
+		var w bytes.Buffer
+		it, err := parentsTable.testInsert(&w, nil)
+		require.NoError(t, err)
+
+		v, itu, err := updatedValues(it)
+		require.NoError(t, err)
+		require.NotNil(t, itu)
+
+		require.Len(t, it.children, 1)
+		require.Len(t, itu.children, 1)
+
+		require.Len(t, it.children[0].data, 1)
+		require.Len(t, itu.children[0].data, 1)
+
+		prev, err := it.children[0].data[0].value.Format(ChildNameCol.Type)
+		require.NoError(t, err)
+
+		curr, err := itu.children[0].data[0].value.Format(ChildNameCol.Type)
+		require.NoError(t, err)
+
+		assert.NotEqual(t, prev, curr)
+
+		valueFormatted, err := itu.children[0].data[0].value.Format(ChildNameCol.Type)
+		require.NoError(t, err)
+		expected := fmt.Sprintf(`%s := %s{%s: %s}
+err = %s.insert(ctx, testDb)
+requireNoError(t, err)
+
+%s.%s = %s.%s`, itu.children[0].varName, childrenTable.StructName, ChildNameCol.FieldName, valueFormatted, itu.children[0].varName, itu.varName, ParentChildIdCol.FieldName, itu.children[0].varName, ChildIdCol.FieldName)
+
+		assert.Equal(t, expected, v)
 	})
 }
