@@ -101,7 +101,7 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("%w: unsupported type=%s (underlying=%s) for formatting", ErrValueFormat, t, u)
+	return "", fmt.Errorf("unsupported type=%s (underlying=%s) for formatting: %w", t, u, ErrValueFormat)
 }
 
 type TestValuer interface {
@@ -270,13 +270,13 @@ func tagListContent(tag string) ([]string, error) {
 	fields := tagFields(tag)
 
 	if strings.HasPrefix(fields[0], "(") {
-		return nil, fmt.Errorf("%w: tag can not start with parenthesis", ErrFlagFormat)
+		return nil, Errorf("tag can not start with parenthesis: %w", ErrFlagFormat)
 	}
 
 	tagContent := strings.Join(fields[1:], "")
 
 	if !strings.HasPrefix(tagContent, "(") || !strings.HasSuffix(tagContent, ")") {
-		return nil, fmt.Errorf("%w: tag must be surrounded with parenthesis", ErrFlagFormat)
+		return nil, Errorf("tag must be surrounded with parenthesis: %w", ErrFlagFormat)
 	}
 
 	content := []string{}
@@ -295,12 +295,12 @@ func tagListContent(tag string) ([]string, error) {
 func tagInt(tag string) (int, error) {
 	fields := tagFields(tag)
 	if len(fields) != 2 {
-		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+		return 0, Errorf("number of items in tag is not exactly two: %w", ErrFlagFieldNumber)
 	}
 	n, err := strconv.Atoi(fields[1])
 
 	if err != nil {
-		return 0, fmt.Errorf("%w: failed to convert to integer", ErrFlagFormat)
+		return 0, Errorf("failed to convert to integer: %w", ErrFlagFormat)
 	}
 	return n, nil
 }
@@ -309,12 +309,12 @@ func tagInt(tag string) (int, error) {
 func tagFloat(tag string) (float64, error) {
 	fields := tagFields(tag)
 	if len(fields) != 2 {
-		return 0, fmt.Errorf("%w: number of items in tag is not exactly two", ErrFlagFieldNumber)
+		return 0, Errorf("number of items in tag is not exactly two: %w", ErrFlagFieldNumber)
 	}
 	n, err := strconv.ParseFloat(fields[1], 64)
 
 	if err != nil {
-		return 0, fmt.Errorf("%w: failed to convert to float", ErrFlagFormat)
+		return 0, Errorf("failed to convert to float: %w", ErrFlagFormat)
 	}
 	return n, nil
 }
@@ -343,7 +343,7 @@ func NewColumn(tag string) (*Column, error) {
 	tag, err := ExtractTagContent(TagPrefix, tag)
 
 	if err != nil {
-		return nil, fmt.Errorf("%w: tag=%s", err, tag)
+		return nil, Errorf("tag=%s: %w", tag, err)
 	}
 
 	if tag == "" {
@@ -388,25 +388,25 @@ func NewColumn(tag string) (*Column, error) {
 		case tagHasPrefix(m, FlagMin):
 			n, err := tagFloat(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: when parsing min, column=%s", err, c.Name)
+				return nil, Errorf("when parsing min, column=%s: %w", c.Name, err)
 			}
 			c.min = n
 		case tagHasPrefix(m, FlagMax):
 			n, err := tagFloat(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: when parsing max, column=%s", err, c.Name)
+				return nil, Errorf("when parsing max, column=%s: %w", c.Name, err)
 			}
 			c.max = n
 		case tagHasPrefix(m, FlagLength):
 			n, err := tagInt(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: when parsing length, column=%s", err, c.Name)
+				return nil, Errorf("when parsing length, column=%s: %w", c.Name, err)
 			}
 			c.length = n
 		case tagHasPrefix(m, FlagEnum):
 			valueSet, err := tagListContent(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
+				return nil, Errorf("column=%s: %w", c.Name, err)
 			}
 
 			c.valueSet = valueSet
@@ -414,13 +414,13 @@ func NewColumn(tag string) (*Column, error) {
 		case tagHasPrefix(m, FlagCharSet):
 			valueSet, err := tagListContent(m)
 			if err != nil {
-				return nil, fmt.Errorf("%w: column=%s", err, c.Name)
+				return nil, Errorf("column=%s: %w", c.Name, err)
 			}
 			r := []rune{}
 
 			for _, s := range valueSet {
 				if len(s) != 1 {
-					return nil, fmt.Errorf("%w: char must be of length 1, column=%s", ErrFlagFormat, c.Name)
+					return nil, Errorf("char must be of length 1, column=%s: %w", c.Name, ErrFlagFormat)
 				}
 				r = append(r, rune(s[0]))
 			}
@@ -495,17 +495,17 @@ func (d *DBModel) ReconcileRelationships() error {
 				table, column, err := c.FKTableAndColumn()
 
 				if err != nil {
-					return fmt.Errorf("%w: fk=%s", err, c.fk)
+					return Errorf("fk=%s: %w", c.fk, err)
 				}
 
 				tt, ok := tmap[table]
 				if !ok {
-					return fmt.Errorf("%w: table=%s", ErrFKTableNotFoundInModel, table)
+					return Errorf("table=%s: %w", table, ErrFKTableNotFoundInModel)
 				}
 
 				col, err := tt.GetColumn(column)
 				if err != nil {
-					return fmt.Errorf("%w: column=%s, table=%s", err, column, table)
+					return Errorf("column=%s, table=%s: %w", column, table, err)
 				}
 
 				c.ForeignKey = col
@@ -575,7 +575,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 	}
 
-	return fmt.Errorf("%w: type=%s", ErrUnsuportedType, c.Type.String())
+	return Errorf("type=%s: %w", c.Type.String(), ErrUnsuportedType)
 }
 
 // NewDBModel parses the File and constructs the entire DBModel.
@@ -619,18 +619,18 @@ MainLoop:
 			}
 
 			if err != nil {
-				return nil, fmt.Errorf("Failed to parse table name: %w", err)
+				return nil, Errorf("when parsing table name: %w", err)
 			}
 
 			if x.Fields != nil {
 				for _, fff := range x.Fields.List {
 					if fff.Tag == nil {
-						return nil, fmt.Errorf("%w: table=%s", ErrNoColumnTag, table.Name)
+						return nil, Errorf("table=%s: %w", table.Name, ErrNoColumnTag)
 					}
 
 					column, err := NewColumn(fff.Tag.Value)
 					if err != nil {
-						return nil, fmt.Errorf("%w: table=%s", err, table.Name)
+						return nil, Errorf("table=%s: %w", table.Name, err)
 					}
 					column.Table = &table
 					column.Type = info.TypeOf(fff.Type)
@@ -639,7 +639,7 @@ MainLoop:
 
 					err = column.inferTestValuer()
 					if err != nil {
-						return nil, fmt.Errorf("%w: when inferring test valuer - table=%s, column=%s", err, table.StructName, column.FieldName)
+						return nil, Errorf("when inferring test valuer - table=%s, column=%s: %w", table.StructName, column.FieldName, err)
 					}
 				}
 			}
@@ -650,7 +650,7 @@ MainLoop:
 
 	err = dbModel.ReconcileRelationships()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to reconcile relationships: %w", err)
+		return nil, Errorf("when reconciling relationships: %w", err)
 	}
 
 	slices.SortFunc(dbModel.Tables, func(a, b *Table) int {

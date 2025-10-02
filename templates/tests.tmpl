@@ -84,17 +84,16 @@ t.Run("getInsert", func(t *testing.T) {
 t.Run("update", func(t *testing.T) {
 	{{ .Inserts }}
 
-	{{ .UpdatesPK }}
+	{{ .UpdatesPK }}// Update By Primary Keys
 	err = {{.TableVarName}}.{{.MethodUpdateByPrimaryKeys}}(ctx, testDb)
 	requireNoError(t, err)
 
-	// Get By Primary Keys
 	gotByPk := {{.StructName}}{}
 	err = gotByPk.{{.MethodGetByPrimaryKeys}}(ctx, testDb, {{ range .PrimaryKeys }}{{$.TableVarName}}.{{.FieldName}},{{end}})
 	requireNoError(t, err)
 	assertEqual(t, {{.TableVarName}}, gotByPk)
 
-	{{ if .BusinessKeys }}// Get By Business Keys
+	{{ if .BusinessKeys }}// Update By Business Keys
 	{{ .UpdatesBK }}
 	err = {{.TableVarName}}.{{$.MethodUpdateByBusinessKeys}}(ctx, testDb)
 	requireNoError(t, err)
