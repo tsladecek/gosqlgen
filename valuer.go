@@ -24,23 +24,23 @@ type valuerNumeric struct {
 
 func NewValuerNumeric(minValue, maxValue float64, isFloat bool) (valuerNumeric, error) {
 	if minValue > maxValue {
-		return valuerNumeric{}, fmt.Errorf("%w: min value is greater than max value", ErrValuerConstructor)
+		return valuerNumeric{}, Errorf("min value is greater than max value: %w", ErrValuerConstructor)
 	}
 
 	if maxValue == 0 && minValue == 0 {
 		maxValue = 32
 	} else if minValue == maxValue {
-		return valuerNumeric{}, fmt.Errorf("%w: min can not equal max value", ErrValuerConstructor)
+		return valuerNumeric{}, Errorf("min can not equal max value: %w", ErrValuerConstructor)
 	}
 
 	if maxValue-minValue < 1 && !isFloat {
-		return valuerNumeric{}, fmt.Errorf("%w: difference between min and max must be greater than one for integers", ErrValuerConstructor)
+		return valuerNumeric{}, Errorf("difference between min and max must be greater than one for integers: %w", ErrValuerConstructor)
 	}
 
 	// float32 has 6-9 significant bit precision
 	minFloatDiff := 0.00001
 	if maxValue-minValue < minFloatDiff && isFloat {
-		return valuerNumeric{}, fmt.Errorf("%w: difference between min and max must be greater %f", ErrValuerConstructor, minFloatDiff)
+		return valuerNumeric{}, Errorf("difference between min and max must be greater %f: %w", minFloatDiff, ErrValuerConstructor)
 	}
 
 	return valuerNumeric{max: maxValue, min: minValue, isFloat: isFloat}, nil
@@ -78,11 +78,11 @@ func (v valuerNumeric) New(prev TestValue) (TestValue, error) {
 	if !v.isFloat {
 		p, ok := prev.Value.(int)
 		if !ok {
-			return TestValue{}, fmt.Errorf("%w: previous value not an int", ErrValuer)
+			return TestValue{}, Errorf("previous value not an int: %w", ErrValuer)
 		}
 		iv, err := v.otherInt(p)
 		if err != nil {
-			return TestValue{}, fmt.Errorf("%w: when generating new integer value", ErrValuer)
+			return TestValue{}, Errorf("when generating new integer value: %w", ErrValuer)
 		}
 
 		return TestValue{Value: iv}, nil
@@ -90,11 +90,11 @@ func (v valuerNumeric) New(prev TestValue) (TestValue, error) {
 
 	p, ok := prev.Value.(float64)
 	if !ok {
-		return TestValue{}, fmt.Errorf("%w: previous value not a float", ErrValuer)
+		return TestValue{}, Errorf("previous value not a float: %w", ErrValuer)
 	}
 	fv, err := v.otherFloat(p)
 	if err != nil {
-		return TestValue{}, fmt.Errorf("%w: when generating new integer value", ErrValuer)
+		return TestValue{}, Errorf("when generating new integer value: %w", ErrValuer)
 	}
 	return TestValue{Value: fv}, nil
 }
@@ -115,7 +115,7 @@ type valuerString struct {
 
 func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []string) (valuerString, error) {
 	if !slices.Contains([]stringKind{stringKindBasic, stringKindJSON, stringKindUUID, stringKindEnum}, kind) {
-		return valuerString{}, fmt.Errorf("%w: kind=%s", ErrStringKind, kind)
+		return valuerString{}, Errorf("kind=%s: %w", kind, ErrStringKind)
 	}
 
 	if len(charSet) == 0 {
@@ -152,7 +152,7 @@ func (v valuerString) basic(prev string) (TestValue, error) {
 		}
 
 		if len(charSetWithoutChar) == 0 {
-			return TestValue{}, fmt.Errorf("%w: can not infer new basic string value", ErrValuer)
+			return TestValue{}, Errorf("can not infer new basic string value: %w", ErrValuer)
 		}
 
 		out[i] = charSetWithoutChar[RandomInt(len(charSetWithoutChar))]
@@ -163,7 +163,7 @@ func (v valuerString) basic(prev string) (TestValue, error) {
 
 func (v valuerString) enum(prev string) (TestValue, error) {
 	if len(v.valueSet) == 1 {
-		return TestValue{}, fmt.Errorf("%w: can not infer new value since the value set contains only one item", ErrValuer)
+		return TestValue{}, Errorf("can not infer new value since the value set contains only one item: %w", ErrValuer)
 	}
 
 	if v.valueSet[0] == prev {
