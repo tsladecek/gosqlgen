@@ -104,7 +104,7 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 		}
 
 		if col.ForeignKey == nil {
-			if col.SoftDelete {
+			if col.SoftDelete || col.PrimaryKey || col.BusinessKey {
 				continue
 			}
 
