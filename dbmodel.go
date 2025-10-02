@@ -619,7 +619,7 @@ MainLoop:
 			}
 
 			if err != nil {
-				return nil, Errorf("Failed to parse table name: %w", err)
+				return nil, Errorf("when parsing table name: %w", err)
 			}
 
 			if x.Fields != nil {
@@ -650,7 +650,7 @@ MainLoop:
 
 	err = dbModel.ReconcileRelationships()
 	if err != nil {
-		return nil, Errorf("Failed to reconcile relationships: %w", err)
+		return nil, Errorf("when reconciling relationships: %w", err)
 	}
 
 	slices.SortFunc(dbModel.Tables, func(a, b *Table) int {

@@ -182,7 +182,7 @@ func (d driver) Create(w io.Writer, table *gosqlgen.Table, methodName string) er
 
 	if aiCol != nil {
 		if !slices.Contains([]string{"int", "int8", "int16", "int32", "int64"}, aiCol.Type.String()) {
-			return fmt.Errorf("Autoincrement column %s must be one of following types: int, int16, int32, int64", aiCol.Name)
+			return fmt.Errorf("autoincrement column %s must be one of following types: int, int16, int32, int64", aiCol.Name)
 		}
 
 		data["AIColumnType"] = aiCol.Type.String()
@@ -263,14 +263,15 @@ func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 	columnPlaceholders := []string{}
 
 	for _, col := range softCols {
-		switch col.Type.String() {
+		ts := col.Type.String()
+		switch ts {
 		case "bool":
 			columnValues = append(columnValues, "true")
 			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
 		case "database/sql.NullTime", "string", "time.Time":
 			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = CURRENT_TIMESTAMP", col.Name))
 		default:
-			return fmt.Errorf("Unsupported type for soft delete column %s.%s", col.Table.Name, col.Name)
+			return fmt.Errorf("unsupported type %s for soft delete column %s.%s", ts, col.Table.Name, col.Name)
 		}
 
 	}

@@ -40,7 +40,7 @@ func NewValuerNumeric(minValue, maxValue float64, isFloat bool) (valuerNumeric, 
 	// float32 has 6-9 significant bit precision
 	minFloatDiff := 0.00001
 	if maxValue-minValue < minFloatDiff && isFloat {
-		return valuerNumeric{}, Errorf("difference between min and max must be greater %f: %w", minFloatDiff, ErrValuerConstructor)
+		return valuerNumeric{}, Errorf("difference between min and max must be greater than %f: %w", minFloatDiff, ErrValuerConstructor)
 	}
 
 	return valuerNumeric{max: maxValue, min: minValue, isFloat: isFloat}, nil
