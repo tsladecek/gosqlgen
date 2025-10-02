@@ -93,7 +93,7 @@ func CreateTemplates(d Driver, model *DBModel, outputPath, outputTestPath string
 		// GET
 		pk, bk, err := table.PkAndBk()
 		if err != nil {
-			return Errorf("when fetching primary and business keys: %w", err)
+			return Errorf("when fetching primary and business keys for table %s: %w", table.Name, err)
 		}
 		err = d.Get(writer, table, pk, string(MethodGetByPrimaryKeys))
 		if err != nil {

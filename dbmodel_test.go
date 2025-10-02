@@ -1,6 +1,7 @@
 package gosqlgen
 
 import (
+	"database/sql"
 	"fmt"
 	"go/ast"
 	"go/format"
@@ -9,6 +10,7 @@ import (
 	"go/types"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -622,6 +624,191 @@ func TestTagFloat(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.value, value)
+			}
+		})
+	}
+
+}
+
+type mockType struct {
+	typeString           string
+	underlyingTypeString string
+}
+
+func (t mockType) String() string {
+	return t.typeString
+}
+
+func (t mockType) Underlying() types.Type {
+	return mockType{typeString: t.underlyingTypeString, underlyingTypeString: t.underlyingTypeString}
+}
+
+func TestTestValueFormat(t *testing.T) {
+	typeMock := func(name string, underlying string) types.Type {
+		return mockType{typeString: name, underlyingTypeString: underlying}
+	}
+	cases := []struct {
+		name          string
+		value         TestValue
+		typ           types.Type
+		expectedValue string
+		expectedErr   bool
+	}{
+		{
+			name:          "Basic Int Type (int)",
+			value:         TestValue{Value: 123},
+			typ:           typeMock("int", "int"),
+			expectedValue: "123",
+			expectedErr:   false,
+		},
+		{
+			name:          "Aliased Int Type (int64)",
+			value:         TestValue{Value: 98765},
+			typ:           typeMock("MyID", "int64"),
+			expectedValue: "98765",
+			expectedErr:   false,
+		},
+		{
+			name:          "Basic Float Type (float64)",
+			value:         TestValue{Value: 456.78},
+			typ:           typeMock("float64", "float64"),
+			expectedValue: "456.78",
+			expectedErr:   false,
+		},
+
+		// --- Numeric Types (database/sql Nullable) ---
+		{
+			name:          "sql.NullInt16 Type",
+			value:         TestValue{Value: 16},
+			typ:           typeMock("database/sql.NullInt16", "database/sql.NullInt16"),
+			expectedValue: "sql.NullInt16{Valid: true, Int16: 16}",
+			expectedErr:   false,
+		},
+		{
+			name:          "sql.NullInt64 Type (Aliased Underlying)",
+			value:         TestValue{Value: 64000},
+			typ:           typeMock("MyNullID", "database/sql.NullInt64"),
+			expectedValue: "sql.NullInt64{Valid: true, Int64: 64000}",
+			expectedErr:   false,
+		},
+		{
+			name:          "sql.NullFloat64 Type",
+			value:         TestValue{Value: 99.125},
+			typ:           typeMock("database/sql.NullFloat64", "database/sql.NullFloat64"),
+			expectedValue: "sql.NullFloat64{Valid: true, Float64: 99.125}",
+			expectedErr:   false,
+		},
+
+		// --- String Types (Basic) ---
+		{
+			name:          "Basic String Type",
+			value:         TestValue{Value: "hello world"},
+			typ:           typeMock("string", "string"),
+			expectedValue: "`hello world`",
+			expectedErr:   false,
+		},
+		{
+			name:          "Byte Type ('A')",
+			value:         TestValue{Value: "A"},
+			typ:           typeMock("byte", "byte"),
+			expectedValue: "byte('A')",
+			expectedErr:   false,
+		},
+		{
+			name:          "Rune Type ('€') (Aliased Underlying)",
+			value:         TestValue{Value: "€"},
+			typ:           typeMock("CustomRune", "rune"),
+			expectedValue: "rune('€')",
+			expectedErr:   false,
+		},
+		{
+			name:          "Byte Slice Type ([]byte)",
+			value:         TestValue{Value: "binary data"},
+			typ:           typeMock("[]byte", "[]byte"),
+			expectedValue: "[]byte(`binary data`)",
+			expectedErr:   false,
+		},
+
+		// --- String Types (database/sql Nullable) ---
+		{
+			name:          "sql.NullString Type",
+			value:         TestValue{Value: "nullable text"},
+			typ:           typeMock("database/sql.NullString", "database/sql.NullString"),
+			expectedValue: "sql.NullString{Valid: true, String: \"nullable text\"}",
+			expectedErr:   false,
+		},
+		{
+			name:          "sql.NullByte Type",
+			value:         TestValue{Value: "z"},
+			typ:           typeMock("database/sql.NullByte", "database/sql.NullByte"),
+			expectedValue: "sql.NullByte{Valid: true, Byte: byte('z')}",
+			expectedErr:   false,
+		},
+
+		// --- Time Types ---
+		{
+			name:          "Time.Time Type",
+			value:         TestValue{Value: time.Now()}, // Value doesn't matter, output is hardcoded
+			typ:           typeMock("time.Time", "time.Time"),
+			expectedValue: "time.Now().UTC().Truncate(time.Second)",
+			expectedErr:   false,
+		},
+		{
+			name:          "sql.NullTime Type",
+			value:         TestValue{Value: sql.NullTime{Valid: true, Time: time.Now()}}, // Value doesn't matter, output is hardcoded
+			typ:           typeMock("database/sql.NullTime", "database/sql.NullTime"),
+			expectedValue: "sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}",
+			expectedErr:   false,
+		},
+
+		// --- Boolean Types ---
+		{
+			name:          "Basic Bool Type (true)",
+			value:         TestValue{Value: true},
+			typ:           typeMock("bool", "bool"),
+			expectedValue: "true",
+			expectedErr:   false,
+		},
+		{
+			name:          "Basic Bool Type (false) (Underlying check)",
+			value:         TestValue{Value: false},
+			typ:           typeMock("CustomBool", "bool"),
+			expectedValue: "false",
+			expectedErr:   false,
+		},
+		{
+			name:          "sql.NullBool Type",
+			value:         TestValue{Value: true},
+			typ:           typeMock("database/sql.NullBool", "database/sql.NullBool"),
+			expectedValue: "sql.NullBool{Valid: true, Bool: true}",
+			expectedErr:   false,
+		},
+
+		// --- Unsupported Type (Error Case) ---
+		{
+			name:          "Unsupported Type (JSON/RawMessage)",
+			value:         TestValue{Value: `{"key": 1}`},
+			typ:           typeMock("encoding/json.RawMessage", "[]byte"),
+			expectedValue: fmt.Sprintf("[]byte(`%s`)", `{"key": 1}`),
+			expectedErr:   false,
+		},
+		{
+			name:          "Unsupported Type (Pointers)",
+			value:         TestValue{Value: nil},
+			typ:           typeMock("*int", "*int"),
+			expectedValue: "",
+			expectedErr:   true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			formatted, err := tt.value.Format(tt.typ)
+			if tt.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, formatted)
 			}
 		})
 	}
