@@ -141,11 +141,30 @@ type Column struct {
 	fk string
 }
 
+type TableFlag string
+
+const (
+	TableFlagIgnore           = "ignore"
+	TableFlagIgnoreUpdate     = "ignore update"
+	TableFlagIgnoreDelete     = "ignore delete"
+	TableFlagIgnoreTest       = "ignore test"
+	TableFlagIgnoreTestUpdate = "ignore test update"
+	TableFlagIgnoreTestDelete = "ignore test delete"
+)
+
+func IsTableFlag(flag string) bool {
+	return slices.Contains([]string{TableFlagIgnore, TableFlagIgnoreUpdate, TableFlagIgnoreDelete, TableFlagIgnoreTest, TableFlagIgnoreTestUpdate, TableFlagIgnoreTestDelete}, flag)
+}
+
 type Table struct {
 	Name       string // name of the sql table
 	StructName string // name of the struct
 	Columns    []*Column
-	SkipTests  bool
+	Flags      []TableFlag
+}
+
+func (t *Table) HasFlag(flag TableFlag) bool {
+	return slices.Contains(t.Flags, flag)
 }
 
 type DBModel struct {
@@ -465,9 +484,9 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 				if len(items) > 1 {
 					for _, item := range items {
 						item = strings.TrimSpace(item)
-						switch item {
-						case "skip tests":
-							t.SkipTests = true
+
+						if IsTableFlag(item) {
+							t.Flags = append(t.Flags, TableFlag(item))
 						}
 					}
 				}

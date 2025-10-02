@@ -12,7 +12,12 @@ Table definition is expected as a comment of the struct type in following format
 `gosqlgen:table_name: REQUIRED[FLAGS]`
 
 Where FLAGS are **semicolon** separated modifiers. Supported are:
-- `skip tests` - tests will be skipped for this table
+- `ignore` - methods and tests will not be generated
+- `ignore update` - update method and tests for update method will not be generated
+- `ignore delete` - delete method and tests for delete method woll not be generated
+- `ignore test` - tests will not be generated
+- `ignore test update` - tests for update method will not be generated
+- `ignore test delete` - tests for delete method will not be generated
 
 ### Column
 Column definition is expected as a field tag (similar to json tag) in following format:

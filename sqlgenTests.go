@@ -238,14 +238,18 @@ func (ts *testSuite) Generate(w io.Writer, table *Table) error {
 		return Errorf("when generating test code for get/insert methods: %w", err)
 	}
 
-	err = ts.update(&tempW, table)
-	if err != nil {
-		return Errorf("when generating test code for update method: %w", err)
+	if !table.HasFlag(TableFlagIgnoreUpdate) && !table.HasFlag(TableFlagIgnoreTestUpdate) {
+		err = ts.update(&tempW, table)
+		if err != nil {
+			return Errorf("when generating test code for update method: %w", err)
+		}
 	}
 
-	err = ts.delete(&tempW, table)
-	if err != nil {
-		return Errorf("when generating test code for delete method: %w", err)
+	if !table.HasFlag(TableFlagIgnoreDelete) && !table.HasFlag(TableFlagIgnoreTestDelete) {
+		err = ts.delete(&tempW, table)
+		if err != nil {
+			return Errorf("when generating test code for delete method: %w", err)
+		}
 	}
 
 	data := make(map[string]string)

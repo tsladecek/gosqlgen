@@ -30,7 +30,7 @@ type User struct {
 	Registered time.Time       `gosqlgen:"registered"`
 }
 
-// gosqlgen: admins;skip tests
+// gosqlgen: admins; ignore test
 type Admin struct {
 	RawId int    `gosqlgen:"_id;pk;ai;fk users._id"`
 	Name  string `gosqlgen:"name; length 31"`

@@ -149,10 +149,10 @@ func TestParseTableName(t *testing.T) {
 		{name: "invalid no annotation found", comments: []string{"// comment line 1", "// comment line 2"}, expectedErr: ErrNoTableTag},
 		{name: "invalid empty table name", comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:", TagPrefix)}, expectedErr: ErrEmptyTablename},
 		{name: "invalid empty table name of spaces", comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:   ", TagPrefix)}, expectedErr: ErrEmptyTablename},
-		{name: "valid", expectedTable: Table{Name: "table", SkipTests: false}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table", TagPrefix)}},
-		{name: "valid with spaces trimmed", expectedTable: Table{Name: "table", SkipTests: false}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:   table  ", TagPrefix)}},
-		{name: "valid with unknown flags", expectedTable: Table{Name: "table", SkipTests: false}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table;unkown;flags", TagPrefix)}},
-		{name: "valid with skip tests flag", expectedTable: Table{Name: "table", SkipTests: true}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table;    skip tests  ", TagPrefix)}},
+		{name: "valid", expectedTable: Table{Name: "table"}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table", TagPrefix)}},
+		{name: "valid with spaces trimmed", expectedTable: Table{Name: "table"}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s:   table  ", TagPrefix)}},
+		{name: "valid with unknown flags", expectedTable: Table{Name: "table"}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table;unkown;flags", TagPrefix)}},
+		{name: "valid with skip tests flag", expectedTable: Table{Name: "table", Flags: []TableFlag{TableFlagIgnoreDelete, TableFlagIgnoreTestUpdate}}, comments: []string{"// comment line 1", "// comment line 2", fmt.Sprintf("// %s: table;    ignore delete; ignore test update  ", TagPrefix)}},
 	}
 
 	for _, tt := range cases {
@@ -308,7 +308,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	content, err := format.Source([]byte(strings.Join([]string{
 		"package main",
 		"import \"database/sql\"",
-		"// gosqlgen: table1; skip tests",
+		"// gosqlgen: table1; ignore test",
 		"type Table1 struct {",
 		"Id int `gosqlgen:\"id;pk;ai;max 16\"`",
 		"Name string `gosqlgen:\"name; bk; length 8; charset (a,b,c,d)\"`",
@@ -338,7 +338,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	t2 := dbModel.Tables[1]
 
 	assert.Equal(t, "table1", t1.Name)
-	assert.True(t, t1.SkipTests)
+	assert.Contains(t, t1.Flags, TableFlagIgnoreTest)
 	assert.Len(t, t1.Columns, 5)
 
 	columnCompare := func(same bool, typeString string, expected, tested Column) {
@@ -391,7 +391,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	assert.Equal(t, *sbu, Column{Name: "should_be_uuid", FieldName: "ShouldBeUUID", Table: t1, TestValuer: valuerString{length: defaultStringLength, kind: stringKindUUID, charSet: defaultCharSet}, Type: types.Typ[types.String], format: stringKindUUID})
 
 	assert.Equal(t, "table2", t2.Name)
-	assert.False(t, t2.SkipTests)
+	assert.Empty(t, t2.Flags)
 
 	// Table: table2, Column: id
 	id2, err := t2.GetColumn("id")
