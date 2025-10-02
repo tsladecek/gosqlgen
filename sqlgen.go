@@ -34,7 +34,7 @@ func additionalImports(model *DBModel) ([]string, []string, error) {
 	testCodeImports := []string{}
 	testCodeImportsMap := make(map[string]bool)
 	for _, table := range model.Tables {
-		if table.SkipTests {
+		if table.HasFlag(TableFlagIgnoreTest) || table.HasFlag(TableFlagIgnore) {
 			continue
 		}
 
@@ -86,6 +86,10 @@ func CreateTemplates(d Driver, model *DBModel, outputPath, outputTestPath string
 	}
 
 	for _, table := range model.Tables {
+		if table.HasFlag(TableFlagIgnore) {
+			continue
+		}
+
 		// GET
 		pk, bk, err := table.PkAndBk()
 		if err != nil {
@@ -110,25 +114,30 @@ func CreateTemplates(d Driver, model *DBModel, outputPath, outputTestPath string
 		}
 
 		// UPDATE
-		err = d.Update(writer, table, pk, string(MethodUpdateByPrimaryKeys))
-		if err != nil {
-			return Errorf("when creating update template for table %s by primary keys: %w: %w", table.Name, err)
-		}
-
-		if len(bk) > 0 {
-			err = d.Update(writer, table, bk, string(MethodUpdateByBusinessKeys))
+		if !table.HasFlag(TableFlagIgnoreUpdate) {
+			err = d.Update(writer, table, pk, string(MethodUpdateByPrimaryKeys))
 			if err != nil {
-				return Errorf("when creating update template for table %s by business keys: %w: %w", table.Name, err)
+				return Errorf("when creating update template for table %s by primary keys: %w: %w", table.Name, err)
+			}
+			if len(bk) > 0 {
+				err = d.Update(writer, table, bk, string(MethodUpdateByBusinessKeys))
+				if err != nil {
+					return Errorf("when creating update template for table %s by business keys: %w: %w", table.Name, err)
+				}
 			}
 		}
 
 		// DELETE
-		err = d.Delete(writer, table, pk, string(MethodDelete))
-		if err != nil {
-			return Errorf("when creating delete template for table %s by primary keys: %w: %w", table.Name, err)
+		if !table.HasFlag(TableFlagIgnoreDelete) {
+			err = d.Delete(writer, table, pk, string(MethodDelete))
+			if err != nil {
+				return Errorf("when creating delete template for table %s by primary keys: %w: %w", table.Name, err)
+			}
+
 		}
 
-		if !table.SkipTests {
+		// Generate tests
+		if !table.HasFlag(TableFlagIgnoreTest) {
 			err = ts.Generate(testWriter, table)
 			if err != nil {
 				return Errorf("when creating test template for table %s: %w: %w", table.Name, err)
