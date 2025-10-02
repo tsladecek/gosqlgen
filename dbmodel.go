@@ -66,23 +66,23 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 		case t == "database/sql.NullInt32" || u == "database/sql.NullInt32":
 			return fmt.Sprintf("sql.NullInt32{Valid: true, Int32: %d}", tv.Value), nil
 		case t == "database/sql.NullInt64" || u == "database/sql.NullInt64":
-			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", tv.Value), nil
+			return fmt.Sprintf("sql.NullInt64{Valid: true, Int64: %d}", tv.Value), nil
 		case t == "database/sql.NullFloat64" || u == "database/sql.NullFloat64":
-			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %d}", tv.Value), nil
+			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %v}", tv.Value), nil
 		}
 	} else if IsOneOfTypes(columnType, StringTypesAll) {
 		switch {
 		case t == "string" || u == "string":
-			return fmt.Sprintf(`"%s"`, tv.Value), nil
+			return fmt.Sprintf("`%s`", tv.Value), nil
 		case t == "byte" || u == "byte":
 			return fmt.Sprintf("byte('%s')", tv.Value), nil
 		case t == "rune" || u == "rune":
 			return fmt.Sprintf("rune('%s')", tv.Value), nil
 		case t == "[]byte" || u == "[]byte":
 			return fmt.Sprintf("[]byte(`%s`)", tv.Value), nil
-		case t == "sql.NullString":
+		case t == "database/sql.NullString":
 			return fmt.Sprintf("sql.NullString{Valid: true, String: \"%s\"}", tv.Value), nil
-		case t == "sql.NullByte":
+		case t == "database/sql.NullByte":
 			return fmt.Sprintf("sql.NullByte{Valid: true, Byte: byte('%s')}", tv.Value), nil
 		}
 	} else if IsOneOfTypes(columnType, TimeTypesAll) {
@@ -195,7 +195,7 @@ var (
 
 	ErrNoColumnTag = errors.New("no column tag found")
 
-	ErrNoPrimaryKey   = errors.New("no primary key found for table")
+	ErrNoPrimaryKey   = errors.New("no primary key found")
 	ErrUnsuportedType = errors.New("unsuported type")
 )
 

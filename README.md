@@ -27,7 +27,7 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 
 **Column constraint flags**
 - `pk` - primary key
-- `pk ai` - primary key auto incremented. Useful for inserts
+- `ai` - auto incremented. Useful only in combination with `pk` for inserts
 - `bk` - business key
 - `fk <table>.<column>` - foreign key referencing `column` on `table`
 - `sd` - soft delete column. If present, the generated `delete` method will be soft delete update
