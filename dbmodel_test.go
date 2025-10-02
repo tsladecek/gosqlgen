@@ -338,7 +338,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 	t2 := dbModel.Tables[1]
 
 	assert.Equal(t, "table1", t1.Name)
-	assert.Contains(t, t1.Flags, TableFlagIgnoreTest)
+	assert.True(t, t1.HasFlag(TableFlagIgnoreTest))
 	assert.Len(t, t1.Columns, 5)
 
 	columnCompare := func(same bool, typeString string, expected, tested Column) {
