@@ -1,8 +1,5 @@
 # gosqlgen
 
-> [!WARNING]
-> Under active development. API might change
-
 SQL method Go(lang) code generator based on table annotations using field tags.
 
 ## Table and Column definition
@@ -28,7 +25,7 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 **Column constraint flags**
 - `pk` - primary key
 - `ai` - auto incremented. Useful only in combination with `pk` for inserts
-- `bk` - business key
+- `bk` - business key (<=> UNIQUE constraint)
 - `fk <table>.<column>` - foreign key referencing `column` on `table`
 - `sd` - soft delete column. If present, the generated `delete` method will be soft delete update
 
@@ -68,7 +65,6 @@ type User struct {
 	Id    string `gosqlgen:"id;bk"`
 	Name  string `gosqlgen:"name;length 64"`
 	BirthContinent Continent `gosqlgen:"birth_continent; enum (Asia, Europe, Africa)"`
-	
 }
 
 // gosqlgen: addresses
