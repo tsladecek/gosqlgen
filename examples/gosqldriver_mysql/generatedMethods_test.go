@@ -14,6 +14,8 @@ import (
 var testDb *sql.DB
 
 func logf(t *testing.T, format string, args ...any) {
+	t.Helper()
+
 	t.Logf("%s: %s", t.Name(), fmt.Sprintf(format, args...))
 }
 
