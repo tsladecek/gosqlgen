@@ -1,2 +1,2 @@
 builds:
-  - main: ./cmd/
+  - main: ./cmd/gosqlgen/
