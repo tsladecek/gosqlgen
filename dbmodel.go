@@ -172,33 +172,6 @@ type DBModel struct {
 	PackageName string
 }
 
-var (
-	ErrFKFieldNumber = errors.New("expected two dot separated fields; expected format: table.column")
-	ErrFKTableEmpty  = errors.New("no table specified; expected format: table.column")
-	ErrFKColumnEmpty = errors.New("no column specified; expected format: table.column")
-
-	ErrInvalidTagPrefix = errors.New("tag prefix not valid")
-	ErrNoClosingQuote   = errors.New("tag not closed with quote")
-
-	ErrEmptyTag          = errors.New("tag empty")
-	ErrTagFieldNumber    = errors.New("tag must have at least one field representing column name")
-	ErrFKSpecFieldNumber = errors.New("invalid Foreign key spec, must be in format: fk table.column")
-	ErrFlagFieldNumber   = errors.New("invalid flag spec")
-	ErrFlagFormat        = errors.New("invalid flag format")
-
-	ErrColumnNotFound = errors.New("column not found")
-
-	ErrEmptyTablename = errors.New("tag found in comment group but table name is empty")
-	ErrNoTableTag     = errors.New("table tag not found")
-
-	ErrFKTableNotFoundInModel = errors.New("table not found in spec when forming foreign key constraints")
-
-	ErrNoColumnTag = errors.New("no column tag found")
-
-	ErrNoPrimaryKey   = errors.New("no primary key found")
-	ErrUnsuportedType = errors.New("unsuported type")
-)
-
 func (d DBModel) Debug() {
 	fmt.Println("---DBModel Debug---")
 	fmt.Printf("--PackageName: %s--\n", d.PackageName)
@@ -261,13 +234,14 @@ func ExtractTagContent(tagName, input string) (string, error) {
 }
 
 func tagHasPrefix(tag string, prefix Flag) bool {
-	return strings.HasPrefix(strings.ToLower(tag), string(prefix))
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(tag)), string(prefix))
 }
 
 func tagEquals(tag string, value Flag) bool {
 	return strings.EqualFold(strings.TrimSpace(tag), string(value))
 }
 
+// tagListContent returns list of space trimmed fields
 func tagFields(tag string) []string {
 	fields := []string{}
 	for c := range strings.SplitSeq(strings.TrimSpace(tag), " ") {

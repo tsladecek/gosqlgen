@@ -112,7 +112,7 @@ func TestNewColumn(t *testing.T) {
 	}
 }
 
-func TestGetColumn(t *testing.T) {
+func TestTableGetColumn(t *testing.T) {
 	col1 := &Column{Name: "col1"}
 	col2 := &Column{Name: "col2"}
 	cases := []struct {
@@ -141,7 +141,7 @@ func TestGetColumn(t *testing.T) {
 	}
 }
 
-func TestParseTableName(t *testing.T) {
+func TestTableParseTableName(t *testing.T) {
 	cases := []struct {
 		name          string
 		expectedErr   error
@@ -179,7 +179,7 @@ func TestParseTableName(t *testing.T) {
 	}
 }
 
-func TestReconcileRelationships(t *testing.T) {
+func TestDBModelReconcileRelationships(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		column1 := &Column{Name: "col1"}
 		table1 := &Table{Name: "table1", Columns: []*Column{column1}}
@@ -644,9 +644,6 @@ func (t mockType) Underlying() types.Type {
 }
 
 func TestTestValueFormat(t *testing.T) {
-	typeMock := func(name string, underlying string) types.Type {
-		return mockType{typeString: name, underlyingTypeString: underlying}
-	}
 	cases := []struct {
 		name          string
 		value         TestValue
@@ -657,21 +654,21 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Basic Int Type (int)",
 			value:         TestValue{Value: 123},
-			typ:           typeMock("int", "int"),
+			typ:           mockType{typeString: "int", underlyingTypeString: "int"},
 			expectedValue: "123",
 			expectedErr:   false,
 		},
 		{
 			name:          "Aliased Int Type (int64)",
 			value:         TestValue{Value: 98765},
-			typ:           typeMock("MyID", "int64"),
+			typ:           mockType{typeString: "MyID", underlyingTypeString: "int64"},
 			expectedValue: "98765",
 			expectedErr:   false,
 		},
 		{
 			name:          "Basic Float Type (float64)",
 			value:         TestValue{Value: 456.78},
-			typ:           typeMock("float64", "float64"),
+			typ:           mockType{typeString: "float64", underlyingTypeString: "float64"},
 			expectedValue: "456.78",
 			expectedErr:   false,
 		},
@@ -680,21 +677,21 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "sql.NullInt16 Type",
 			value:         TestValue{Value: 16},
-			typ:           typeMock("database/sql.NullInt16", "database/sql.NullInt16"),
+			typ:           mockType{typeString: "database/sql.NullInt16", underlyingTypeString: "database/sql.NullInt16"},
 			expectedValue: "sql.NullInt16{Valid: true, Int16: 16}",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullInt64 Type (Aliased Underlying)",
 			value:         TestValue{Value: 64000},
-			typ:           typeMock("MyNullID", "database/sql.NullInt64"),
+			typ:           mockType{typeString: "MyNullID", underlyingTypeString: "database/sql.NullInt64"},
 			expectedValue: "sql.NullInt64{Valid: true, Int64: 64000}",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullFloat64 Type",
 			value:         TestValue{Value: 99.125},
-			typ:           typeMock("database/sql.NullFloat64", "database/sql.NullFloat64"),
+			typ:           mockType{typeString: "database/sql.NullFloat64", underlyingTypeString: "database/sql.NullFloat64"},
 			expectedValue: "sql.NullFloat64{Valid: true, Float64: 99.125}",
 			expectedErr:   false,
 		},
@@ -703,28 +700,28 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Basic String Type",
 			value:         TestValue{Value: "hello world"},
-			typ:           typeMock("string", "string"),
+			typ:           mockType{typeString: "string", underlyingTypeString: "string"},
 			expectedValue: "`hello world`",
 			expectedErr:   false,
 		},
 		{
 			name:          "Byte Type ('A')",
 			value:         TestValue{Value: "A"},
-			typ:           typeMock("byte", "byte"),
+			typ:           mockType{typeString: "byte", underlyingTypeString: "byte"},
 			expectedValue: "byte('A')",
 			expectedErr:   false,
 		},
 		{
 			name:          "Rune Type ('€') (Aliased Underlying)",
 			value:         TestValue{Value: "€"},
-			typ:           typeMock("CustomRune", "rune"),
+			typ:           mockType{typeString: "CustomRune", underlyingTypeString: "rune"},
 			expectedValue: "rune('€')",
 			expectedErr:   false,
 		},
 		{
 			name:          "Byte Slice Type ([]byte)",
 			value:         TestValue{Value: "binary data"},
-			typ:           typeMock("[]byte", "[]byte"),
+			typ:           mockType{typeString: "[]byte", underlyingTypeString: "[]byte"},
 			expectedValue: "[]byte(`binary data`)",
 			expectedErr:   false,
 		},
@@ -733,14 +730,14 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "sql.NullString Type",
 			value:         TestValue{Value: "nullable text"},
-			typ:           typeMock("database/sql.NullString", "database/sql.NullString"),
+			typ:           mockType{typeString: "database/sql.NullString", underlyingTypeString: "database/sql.NullString"},
 			expectedValue: "sql.NullString{Valid: true, String: \"nullable text\"}",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullByte Type",
 			value:         TestValue{Value: "z"},
-			typ:           typeMock("database/sql.NullByte", "database/sql.NullByte"),
+			typ:           mockType{typeString: "database/sql.NullByte", underlyingTypeString: "database/sql.NullByte"},
 			expectedValue: "sql.NullByte{Valid: true, Byte: byte('z')}",
 			expectedErr:   false,
 		},
@@ -749,14 +746,14 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Time.Time Type",
 			value:         TestValue{Value: time.Now()}, // Value doesn't matter, output is hardcoded
-			typ:           typeMock("time.Time", "time.Time"),
+			typ:           mockType{typeString: "time.Time", underlyingTypeString: "time.Time"},
 			expectedValue: "time.Now().UTC().Truncate(time.Second)",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullTime Type",
 			value:         TestValue{Value: sql.NullTime{Valid: true, Time: time.Now()}}, // Value doesn't matter, output is hardcoded
-			typ:           typeMock("database/sql.NullTime", "database/sql.NullTime"),
+			typ:           mockType{typeString: "database/sql.NullTime", underlyingTypeString: "database/sql.NullTime"},
 			expectedValue: "sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}",
 			expectedErr:   false,
 		},
@@ -765,21 +762,21 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Basic Bool Type (true)",
 			value:         TestValue{Value: true},
-			typ:           typeMock("bool", "bool"),
+			typ:           mockType{typeString: "bool", underlyingTypeString: "bool"},
 			expectedValue: "true",
 			expectedErr:   false,
 		},
 		{
 			name:          "Basic Bool Type (false) (Underlying check)",
 			value:         TestValue{Value: false},
-			typ:           typeMock("CustomBool", "bool"),
+			typ:           mockType{typeString: "CustomBool", underlyingTypeString: "bool"},
 			expectedValue: "false",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullBool Type",
 			value:         TestValue{Value: true},
-			typ:           typeMock("database/sql.NullBool", "database/sql.NullBool"),
+			typ:           mockType{typeString: "database/sql.NullBool", underlyingTypeString: "database/sql.NullBool"},
 			expectedValue: "sql.NullBool{Valid: true, Bool: true}",
 			expectedErr:   false,
 		},
@@ -788,14 +785,14 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Unsupported Type (JSON/RawMessage)",
 			value:         TestValue{Value: `{"key": 1}`},
-			typ:           typeMock("encoding/json.RawMessage", "[]byte"),
+			typ:           mockType{typeString: "encoding/json.RawMessage", underlyingTypeString: "[]byte"},
 			expectedValue: fmt.Sprintf("[]byte(`%s`)", `{"key": 1}`),
 			expectedErr:   false,
 		},
 		{
 			name:          "Unsupported Type (Pointers)",
 			value:         TestValue{Value: nil},
-			typ:           typeMock("*int", "*int"),
+			typ:           mockType{typeString: "*int", underlyingTypeString: "*int"},
 			expectedValue: "",
 			expectedErr:   true,
 		},
@@ -813,4 +810,68 @@ func TestTestValueFormat(t *testing.T) {
 		})
 	}
 
+}
+
+func TestIsOneOfTypes(t *testing.T) {
+	i := mockType{typeString: "int", underlyingTypeString: "int"}
+	u := mockType{typeString: "customInt", underlyingTypeString: "int"}
+
+	assert.True(t, IsOneOfTypes(i, []string{"int"}))
+	assert.True(t, IsOneOfTypes(u, []string{"int"}))
+	assert.False(t, IsOneOfTypes(u, []string{"string"}))
+}
+
+func TestIsTableFlag(t *testing.T) {
+	for _, f := range []string{"ignore", "ignore update", "ignore delete", "ignore test", "ignore test update", "ignore test delete"} {
+		assert.True(t, IsTableFlag(f))
+	}
+
+	assert.False(t, IsTableFlag("invalid"))
+}
+
+func TestTableHasFlag(t *testing.T) {
+	table := Table{Flags: []TableFlag{TableFlagIgnore, TableFlagIgnoreDelete}}
+
+	assert.True(t, table.HasFlag(TableFlagIgnore))
+	assert.True(t, table.HasFlag(TableFlagIgnoreDelete))
+
+	assert.False(t, table.HasFlag(TableFlagIgnoreUpdate))
+	assert.False(t, table.HasFlag(TableFlagIgnoreTest))
+	assert.False(t, table.HasFlag(TableFlagIgnoreTestUpdate))
+	assert.False(t, table.HasFlag(TableFlagIgnoreTestDelete))
+}
+
+func TestTagHasPrefix(t *testing.T) {
+	assert.True(t, tagHasPrefix("taag", "ta"))
+	assert.True(t, tagHasPrefix("tag two", "tag"))
+	assert.True(t, tagHasPrefix("  tag two", "tag"))
+	assert.True(t, tagHasPrefix("  TAG two", "tag"))
+	assert.False(t, tagHasPrefix("tag two", "two"))
+}
+
+func TestTagEquals(t *testing.T) {
+	assert.True(t, tagEquals("tag", "tag"))
+	assert.False(t, tagEquals("tag", "ttag"))
+	assert.True(t, tagEquals(" tag", "tag"))
+	assert.True(t, tagEquals(" tAg", "tag"))
+}
+
+func TestTagFields(t *testing.T) {
+	cases := []struct {
+		name           string
+		tag            string
+		expectedFields []string
+	}{
+		{name: "basic", tag: "f1 f2 f3", expectedFields: []string{"f1", "f2", "f3"}},
+		{name: "additional spaces should be trimmed", tag: "  f1    f2     f3   ", expectedFields: []string{"f1", "f2", "f3"}},
+		{name: "empty", tag: "", expectedFields: []string{}},
+		{name: "empty with spaces", tag: "  ", expectedFields: []string{}},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			f := tagFields(tt.tag)
+			assert.Equal(t, tt.expectedFields, f)
+		})
+	}
 }

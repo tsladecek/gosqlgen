@@ -1,19 +1,9 @@
 package gosqlgen
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"time"
-)
-
-var (
-	ErrValuer            = errors.New("failed to infer new value")
-	ErrStringKind        = errors.New("unrecognized string kind")
-	ErrPrevType          = errors.New("type of previous value does not match valuer")
-	ErrValuerConstructor = errors.New("failed to construct valuer")
-	ErrValueFormat       = errors.New("failed to format value")
-	ErrValueType         = errors.New("invalid type")
 )
 
 type valuerNumeric struct {

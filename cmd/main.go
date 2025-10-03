@@ -1,5 +1,3 @@
-//go:build ignore
-
 package main
 
 import (
@@ -28,6 +26,7 @@ func run() error {
 	debug := flag.Bool("debug", false, "debug")
 	driver := flag.String("driver", "", "Driver to use. Supported: "+strings.Join(supportedDrivers, ", "))
 
+	input := flag.String("in", "", "Path to the input file. Ignored when generating code with go generate")
 	output := flag.String("out", "generatedMethods.go", "Path to output")
 	outputTest := flag.String("outTest", "generatedMethods_test.go", "Path to output of test code")
 
@@ -39,7 +38,18 @@ func run() error {
 
 	filename := os.Getenv("GOFILE")
 	if filename == "" {
-		return gosqlgen.Errorf("GOFILE environment variable not set.")
+		if *input != "" {
+			stat, err := os.Stat(*input)
+			if err != nil {
+				return fmt.Errorf("when checking file %q: %w", *input, err)
+			}
+			if stat.IsDir() {
+				return fmt.Errorf("%q must be a file: %w", *input, err)
+			}
+			filename = *input
+		} else {
+			return gosqlgen.Errorf("GOFILE environment variable not set.")
+		}
 	}
 
 	fset := token.NewFileSet()
