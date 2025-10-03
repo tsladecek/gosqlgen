@@ -71,7 +71,13 @@ func run() error {
 	if err != nil {
 		return gosqlgen.Errorf("when initializing driver: %w", err)
 	}
-	err = gosqlgen.CreateTemplates(d, dbModel, *output, *outputTest)
+
+	ts, err := gosqlgen.NewTestSuite()
+	if err != nil {
+		return gosqlgen.Errorf("when initializing test suite: %w", err)
+	}
+
+	err = gosqlgen.CreateTemplates(d, dbModel, ts, *output, *outputTest)
 	if err != nil {
 		return gosqlgen.Errorf("when generating code from templates: %w", err)
 	}

@@ -83,14 +83,14 @@ type testSuite struct {
 //go:embed templates
 var templateFS embed.FS
 
-func NewTestSuite() (testSuite, error) {
+func NewTestSuite() (*testSuite, error) {
 	tmpl, err := template.ParseFS(templateFS, "templates/*.tmpl")
 
 	if err != nil {
-		return testSuite{}, err
+		return nil, err
 	}
 
-	return testSuite{templates: tmpl}, nil
+	return &testSuite{templates: tmpl}, nil
 }
 
 func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, error) {
@@ -201,7 +201,7 @@ func (ts *testSuite) newData(table *Table) (map[string]any, error) {
 	return data, nil
 }
 
-func (ts *testSuite) getInsert(w io.Writer, table *Table) error {
+func (ts *testSuite) GetInsert(w io.Writer, table *Table) error {
 	data, err := ts.newData(table)
 	if err != nil {
 		return Errorf("when generating test data for get/insert method: %w", err)
@@ -211,7 +211,7 @@ func (ts *testSuite) getInsert(w io.Writer, table *Table) error {
 	return nil
 }
 
-func (ts *testSuite) update(w io.Writer, table *Table) error {
+func (ts *testSuite) Update(w io.Writer, table *Table) error {
 	data, err := ts.newData(table)
 	if err != nil {
 		return Errorf("when generating test data for update method: %w", err)
@@ -220,7 +220,7 @@ func (ts *testSuite) update(w io.Writer, table *Table) error {
 	return nil
 }
 
-func (ts *testSuite) delete(w io.Writer, table *Table) error {
+func (ts *testSuite) Delete(w io.Writer, table *Table) error {
 	data, err := ts.newData(table)
 	if err != nil {
 		return Errorf("when generating test data for delete method: %w", err)
@@ -230,23 +230,27 @@ func (ts *testSuite) delete(w io.Writer, table *Table) error {
 	return nil
 }
 
-func (ts *testSuite) Generate(w io.Writer, table *Table) error {
+func (ts *testSuite) ExecuteTemplate(w io.Writer, tmpl string, data any) error {
+	return ts.templates.ExecuteTemplate(w, tmpl, data)
+}
+
+func GenerateTests(ts TestSuite, w io.Writer, table *Table) error {
 	var tempW bytes.Buffer
 
-	err := ts.getInsert(&tempW, table)
+	err := ts.GetInsert(&tempW, table)
 	if err != nil {
 		return Errorf("when generating test code for get/insert methods: %w", err)
 	}
 
 	if !table.HasFlag(TableFlagIgnoreUpdate) && !table.HasFlag(TableFlagIgnoreTestUpdate) {
-		err = ts.update(&tempW, table)
+		err = ts.Update(&tempW, table)
 		if err != nil {
 			return Errorf("when generating test code for update method: %w", err)
 		}
 	}
 
 	if !table.HasFlag(TableFlagIgnoreDelete) && !table.HasFlag(TableFlagIgnoreTestDelete) {
-		err = ts.delete(&tempW, table)
+		err = ts.Delete(&tempW, table)
 		if err != nil {
 			return Errorf("when generating test code for delete method: %w", err)
 		}
@@ -255,7 +259,7 @@ func (ts *testSuite) Generate(w io.Writer, table *Table) error {
 	data := make(map[string]string)
 	data["Tests"] = tempW.String()
 	data["StructName"] = table.StructName
-	ts.templates.ExecuteTemplate(w, "main", data)
+	ts.ExecuteTemplate(w, "main", data)
 
 	return nil
 }
