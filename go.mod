@@ -1,6 +1,6 @@
 module github.com/tsladecek/gosqlgen
 
-go 1.24.2
+go 1.25.1
 
 require github.com/stretchr/testify v1.10.0
 
