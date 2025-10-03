@@ -42,12 +42,18 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 The tool will not raise any errors if more are used within the tag. In such case, the last (right
 most) format specifier will be used
 
+## Install
+
+```shell
+go install github.com/tsladecek/gosqlgen/cmd/gosqlgen@latest
+```
+
 ## Example
 
 Given following table spec:
 
 ```go
-//go:generate go run cmd/main.go -driver gosqldriver_mysql -out generatedMethods.go -outTest generatedMethods_test.go
+//go:generate gosqlgen -driver gosqldriver_mysql -out generatedMethods.go -outTest generatedMethods_test.go
 package dbrepo
 
 type Continent string
