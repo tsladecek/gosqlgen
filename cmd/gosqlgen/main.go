@@ -13,6 +13,8 @@ import (
 	gosqldrivermysql "github.com/tsladecek/gosqlgen/drivers/gosqldriver_mysql"
 )
 
+var version = "dev"
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Println(strings.TrimPrefix(err.Error(), "\n"))
@@ -30,7 +32,14 @@ func run() error {
 	output := flag.String("out", "generatedMethods.go", "Path to output")
 	outputTest := flag.String("outTest", "generatedMethods_test.go", "Path to output of test code")
 
+	versionPtr := flag.Bool("version", false, "Print current version")
+
 	flag.Parse()
+
+	if *versionPtr {
+		println(version)
+		os.Exit(0)
+	}
 
 	if !slices.Contains(supportedDrivers, *driver) {
 		return gosqlgen.Errorf("unsupported driver %s; supported are: %s", *driver, strings.Join(supportedDrivers, ", "))
