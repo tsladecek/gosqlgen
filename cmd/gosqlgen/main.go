@@ -23,7 +23,7 @@ func main() {
 }
 
 func run() error {
-	supportedDrivers := []string{"gosqldriver_mysql"}
+	supportedDrivers := []string{"gosqldriver_mysql", "mattn_gosqlite3"}
 
 	debug := flag.Bool("debug", false, "debug")
 	driver := flag.String("driver", "", "Driver to use. Supported: "+strings.Join(supportedDrivers, ", "))

@@ -1,4 +1,4 @@
-package gosqldrivermysql
+package mattngosqlite3
 
 import (
 	"fmt"

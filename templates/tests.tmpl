@@ -13,8 +13,6 @@ import (
 	{{ end }}
 )
 
-var testDb *sql.DB
-
 func logf(t *testing.T, format string, args ...any) {
 	t.Helper()
 
@@ -64,6 +62,8 @@ func TestGoSQLGen_{{.StructName}}(t *testing.T) {
 
 {{define "getInsert"}}
 t.Run("getInsert", func(t *testing.T) {
+	testDb, close := getTestDB()
+	defer close()
 	{{ .Inserts }}
 
 	// Get By Primary Keys
@@ -84,6 +84,8 @@ t.Run("getInsert", func(t *testing.T) {
 
 {{define "update"}}
 t.Run("update", func(t *testing.T) {
+	testDb, close := getTestDB()
+	defer close()
 	{{ .Inserts }}
 
 	{{ .UpdatesPK }}// Update By Primary Keys
@@ -110,6 +112,8 @@ t.Run("update", func(t *testing.T) {
 
 {{define "delete"}}
 t.Run("delete", func(t *testing.T) {
+	testDb, close := getTestDB()
+	defer close()
 	{{ .Inserts }}
 
 	got := {{.StructName}}{}

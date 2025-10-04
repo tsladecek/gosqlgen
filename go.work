@@ -3,4 +3,5 @@ go 1.25.1
 use (
 	.
 	./examples/gosqldriver_mysql
+	./examples/mattn_gosqlite3
 )
