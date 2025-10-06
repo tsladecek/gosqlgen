@@ -94,7 +94,7 @@ func TestNewColumn(t *testing.T) {
 		{name: "invalid - fk spec contains more than two space separated fields", tag: fmt.Sprintf(`%s:"column;pk ai;fk table col;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
 		{name: "invalid - fk spec contains less than two space separated fields", tag: fmt.Sprintf(`%s:"column;pk ai;fk;bk;sd"`, TagPrefix), expectedErr: ErrFKSpecFieldNumber},
 		{name: "valid - column with everything", tag: fmt.Sprintf(`%s:"column;pk;ai;fk table.col;bk;sd"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col", format: stringKindBasic}},
-		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;      pk;ai   ;     fk table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col", format: stringKindBasic}},
+		{name: "valid - column with everything with spaces that should be trimmed", tag: fmt.Sprintf(`%s:"   column  ;      pk;ai   ;     fk   table.col   ;  bk  ;  sd  "`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, SoftDelete: true, BusinessKey: true, AutoIncrement: true, fk: "table.col", format: stringKindBasic}},
 		{name: "valid - just pk", tag: fmt.Sprintf(`%s:"column;pk"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", PrimaryKey: true, format: stringKindBasic}},
 		{name: "valid - unrecognized tag is skipped", tag: fmt.Sprintf(`%s:"column;bad"`, TagPrefix), expectedErr: nil, expectedColumn: Column{Name: "column", format: stringKindBasic}},
 	}
@@ -873,5 +873,26 @@ func TestTagFields(t *testing.T) {
 			f := tagFields(tt.tag)
 			assert.Equal(t, tt.expectedFields, f)
 		})
+	}
+}
+
+func TestStringKindIsValid(t *testing.T) {
+	for _, vsk := range validStringKinds {
+		sk := stringKind(strings.ToLower(string(vsk)))
+		valid := sk.IsValid()
+		assert.True(t, valid)
+		assert.Equal(t, vsk, sk)
+	}
+
+	invalid := stringKind("invalid")
+	assert.False(t, invalid.IsValid())
+}
+
+func TestStringKindIsTime(t *testing.T) {
+	for k, f := range timeFormats {
+		sk := stringKind(k)
+		tf, ok := sk.IsTime()
+		require.True(t, ok)
+		assert.Equal(t, f, tf)
 	}
 }

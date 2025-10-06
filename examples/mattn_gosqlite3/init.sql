@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS addresses (
     user_id INTEGER NOT NULL,
     country_id INTEGER NOT NULL,
     deleted_at TEXT,
+    ipv4 TEXT NOT NULL,
+    ipv6 TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(_id),
     FOREIGN KEY (country_id) REFERENCES countries(_id)
 );

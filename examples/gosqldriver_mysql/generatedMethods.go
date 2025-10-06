@@ -20,7 +20,7 @@ type dbExecutor interface {
 }
 
 func (t *Address) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int32) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, address, user_id, country_id, deleted_at FROM addresses WHERE _id = ? AND deleted_at IS NULL", _id).Scan(&t.RawId, &t.Id, &t.Address, &t.UserId, &t.CountryId, &t.DeletedAt)
+	err := db.QueryRowContext(ctx, "SELECT _id, id, address, user_id, country_id, deleted_at, ipv4, ipv6 FROM addresses WHERE _id = ? AND deleted_at IS NULL", _id).Scan(&t.RawId, &t.Id, &t.Address, &t.UserId, &t.CountryId, &t.DeletedAt, &t.IPV4, &t.IPV6)
 
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (t *Address) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int32
 }
 
 func (t *Address) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error {
-	err := db.QueryRowContext(ctx, "SELECT _id, id, address, user_id, country_id, deleted_at FROM addresses WHERE id = ? AND deleted_at IS NULL", id).Scan(&t.RawId, &t.Id, &t.Address, &t.UserId, &t.CountryId, &t.DeletedAt)
+	err := db.QueryRowContext(ctx, "SELECT _id, id, address, user_id, country_id, deleted_at, ipv4, ipv6 FROM addresses WHERE id = ? AND deleted_at IS NULL", id).Scan(&t.RawId, &t.Id, &t.Address, &t.UserId, &t.CountryId, &t.DeletedAt, &t.IPV4, &t.IPV6)
 
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (t *Address) getByBusinessKeys(ctx context.Context, db dbExecutor, id strin
 }
 
 func (t *Address) insert(ctx context.Context, db dbExecutor) error {
-	res, err := db.ExecContext(ctx, "INSERT INTO addresses (id, address, user_id, country_id) VALUES (?, ?, ?, ?)", t.Id, t.Address, t.UserId, t.CountryId)
+	res, err := db.ExecContext(ctx, "INSERT INTO addresses (id, address, user_id, country_id, ipv4, ipv6) VALUES (?, ?, ?, ?, ?, ?)", t.Id, t.Address, t.UserId, t.CountryId, t.IPV4, t.IPV6)
 	if err != nil {
 		return err
 	}
@@ -55,12 +55,12 @@ func (t *Address) insert(ctx context.Context, db dbExecutor) error {
 }
 
 func (t *Address) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE addresses SET address = ?, user_id = ?, country_id = ? WHERE _id=?", t.Address, t.UserId, t.CountryId, t.RawId)
+	_, err := db.ExecContext(ctx, "UPDATE addresses SET address = ?, user_id = ?, country_id = ?, ipv4 = ?, ipv6 = ? WHERE _id=?", t.Address, t.UserId, t.CountryId, t.IPV4, t.IPV6, t.RawId)
 	return err
 }
 
 func (t *Address) updateByBusinessKeys(ctx context.Context, db dbExecutor) error {
-	_, err := db.ExecContext(ctx, "UPDATE addresses SET address = ?, user_id = ?, country_id = ? WHERE id=?", t.Address, t.UserId, t.CountryId, t.Id)
+	_, err := db.ExecContext(ctx, "UPDATE addresses SET address = ?, user_id = ?, country_id = ?, ipv4 = ?, ipv6 = ? WHERE id=?", t.Address, t.UserId, t.CountryId, t.IPV4, t.IPV6, t.Id)
 	return err
 }
 

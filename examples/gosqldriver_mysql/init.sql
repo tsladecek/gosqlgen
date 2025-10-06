@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS `addresses` (
     `user_id` INT(11) NOT NULL,
     `country_id` INT(11) NOT NULL,
     `deleted_at` DATETIME,
+    `ipv4` VARCHAR(16) NOT NULL,
+    `ipv6` VARCHAR(40) NOT NULL,
     PRIMARY KEY (`_id`),
     FOREIGN KEY (`user_id`) REFERENCES `users`(`_id`),
     FOREIGN KEY (`country_id`) REFERENCES `countries`(`_id`)

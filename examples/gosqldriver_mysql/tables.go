@@ -53,6 +53,8 @@ type Address struct {
 	UserId    int          `gosqlgen:"user_id;fk users._id"`
 	CountryId int          `gosqlgen:"country_id;fk countries._id"`
 	DeletedAt sql.NullTime `gosqlgen:"deleted_at;sd"`
+	IPV4      string       `gosqlgen:"ipv4; ipv4"`
+	IPV6      string       `gosqlgen:"ipv6; ipv6"`
 }
 
 // gosqlgen: addresses_book

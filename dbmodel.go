@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const TagPrefix = "gosqlgen"
@@ -116,7 +117,48 @@ const (
 	stringKindEnum  stringKind = "enum"
 	stringKindJSON  stringKind = "json"
 	stringKindUUID  stringKind = "uuid"
+	stringKindIPV4  stringKind = "ipv4"
+	stringKindIPV6  stringKind = "ipv6"
+
+	// Time
+	stringKindTimeLayout      stringKind = "Layout"
+	stringKindTimeANSIC       stringKind = "ANSIC"
+	stringKindTimeUnixDate    stringKind = "UnixDate"
+	stringKindTimeRubyDate    stringKind = "RubyDate"
+	stringKindTimeRFC822      stringKind = "RFC822"
+	stringKindTimeRFC822Z     stringKind = "RFC822Z"
+	stringKindTimeRFC850      stringKind = "RFC850"
+	stringKindTimeRFC1123     stringKind = "RFC1123"
+	stringKindTimeRFC1123Z    stringKind = "RFC1123Z"
+	stringKindTimeRFC3339     stringKind = "RFC3339"
+	stringKindTimeRFC3339Nano stringKind = "RFC3339Nano"
+	stringKindTimeKitchen     stringKind = "Kitchen"
+	stringKindTimeStamp       stringKind = "Stamp"
+	stringKindTimeStampMilli  stringKind = "StampMilli"
+	stringKindTimeStampMicro  stringKind = "StampMicro"
+	stringKindTimeStampNano   stringKind = "StampNano"
+	stringKindTimeDateTime    stringKind = "DateTime"
+	stringKindTimeDateOnly    stringKind = "DateOnly"
+	stringKindTimeTimeOnly    stringKind = "TimeOnly"
 )
+
+var validStringKinds = []stringKind{stringKindBasic, stringKindEnum, stringKindJSON, stringKindUUID, stringKindIPV4, stringKindIPV6, stringKindTimeLayout, stringKindTimeANSIC, stringKindTimeUnixDate, stringKindTimeRubyDate, stringKindTimeRFC822, stringKindTimeRFC822Z, stringKindTimeRFC850, stringKindTimeRFC1123, stringKindTimeRFC1123Z, stringKindTimeRFC3339, stringKindTimeRFC3339Nano, stringKindTimeKitchen, stringKindTimeStamp, stringKindTimeStampMilli, stringKindTimeStampMicro, stringKindTimeStampNano, stringKindTimeDateTime, stringKindTimeDateOnly, stringKindTimeTimeOnly}
+
+func (sk *stringKind) IsValid() bool {
+	for _, vsk := range validStringKinds {
+		if strings.EqualFold(string(vsk), string(*sk)) {
+			*sk = vsk
+			return true
+		}
+
+	}
+	return false
+}
+
+func (sk stringKind) IsTime() (string, bool) {
+	tf, ok := timeFormats[string(sk)]
+	return tf, ok
+}
 
 type Column struct {
 	Name          string     // name of the sql column
@@ -327,7 +369,12 @@ const (
 	FlagUUID          Flag = "uuid"
 	FlagEnum          Flag = "enum"
 	FlagCharSet       Flag = "charset"
+	FlagTime          Flag = "time"
+	FlagIPV4          Flag = "ipv4"
+	FlagIPV6          Flag = "ipv6"
 )
+
+var timeFormats = map[string]string{"Layout": time.Layout, "ANSIC": time.ANSIC, "UnixDate": time.UnixDate, "RubyDate": time.RubyDate, "RFC822": time.RFC822, "RFC822Z": time.RFC822Z, "RFC850": time.RFC850, "RFC1123": time.RFC1123, "RFC1123Z": time.RFC1123Z, "RFC3339": time.RFC3339, "RFC3339Nano": time.RFC3339Nano, "Kitchen": time.Kitchen, "Stamp": time.Stamp, "StampMilli": time.StampMilli, "StampMicro": time.StampMicro, "StampNano": time.StampNano, "DateTime": time.DateTime, "DateOnly": time.DateOnly, "TimeOnly": time.TimeOnly}
 
 // NewColumn constructs Column from a tag. Foreign keys are stored
 // in a temporary private field "fk". All relationships are reconcilled
@@ -369,7 +416,7 @@ func NewColumn(tag string) (*Column, error) {
 		case tagEquals(m, FlagSoftDelete):
 			c.SoftDelete = true
 		case tagHasPrefix(m, FlagForeignKey):
-			fkFields := strings.Split(m, " ")
+			fkFields := tagFields(m)
 			if len(fkFields) != 2 {
 				return nil, ErrFKSpecFieldNumber
 			}
@@ -378,6 +425,10 @@ func NewColumn(tag string) (*Column, error) {
 			c.format = stringKindJSON
 		case tagEquals(m, FlagUUID):
 			c.format = stringKindUUID
+		case tagEquals(m, FlagIPV4):
+			c.format = stringKindIPV4
+		case tagEquals(m, FlagIPV6):
+			c.format = stringKindIPV6
 		case tagHasPrefix(m, FlagMin):
 			n, err := tagFloat(m)
 			if err != nil {
@@ -418,6 +469,17 @@ func NewColumn(tag string) (*Column, error) {
 				r = append(r, rune(s[0]))
 			}
 			c.charSet = r
+		case tagHasPrefix(m, FlagTime):
+			fields := tagFields(m)
+			if len(fields) != 2 {
+				return nil, Errorf("when parsing column=%s, tag=%s: %w", c.Name, m, ErrTagFieldNumber)
+			}
+
+			sk := stringKind(fields[1])
+			if !sk.IsValid() {
+				return nil, Errorf("unknown time format %s", fields[1])
+			}
+			c.format = sk
 		}
 
 	}

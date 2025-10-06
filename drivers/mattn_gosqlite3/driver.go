@@ -118,12 +118,12 @@ func (d driver) Get(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Column,
 		scanColumns[i] = fmt.Sprintf("&%s.%s", objName, c.FieldName)
 
 		if c.SoftDelete {
-			switch c.Type.String() {
-			case "bool":
+			switch {
+			case gosqlgen.IsOneOfTypes(c.Type, gosqlgen.BooleanTypes):
 				queryCond = append(queryCond, fmt.Sprintf("%s = false", c.Name))
-			case "database/sql.NullTime":
+			case gosqlgen.IsOneOfTypes(c.Type, slices.Concat(gosqlgen.StringTypesNull, gosqlgen.TimeTypesNull, gosqlgen.BooleanTypesNull)):
 				queryCond = append(queryCond, fmt.Sprintf("%s IS NULL", c.Name))
-			case "string":
+			case gosqlgen.IsOneOfTypes(c.Type, gosqlgen.StringTypes):
 				queryCond = append(queryCond, fmt.Sprintf(`%s = ?`, c.Name))
 				queryCondValues = append(queryCondValues, `""`)
 			}
@@ -263,15 +263,14 @@ func (d driver) Delete(w io.Writer, table *gosqlgen.Table, keys []*gosqlgen.Colu
 	columnPlaceholders := []string{}
 
 	for _, col := range softCols {
-		ts := col.Type.String()
-		switch ts {
-		case "bool":
+		switch {
+		case gosqlgen.IsOneOfTypes(col.Type, gosqlgen.BooleanTypes):
 			columnValues = append(columnValues, "true")
 			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = ?", col.Name))
-		case "database/sql.NullTime", "string", "time.Time":
+		case gosqlgen.IsOneOfTypes(col.Type, slices.Concat(gosqlgen.StringTypesAll, gosqlgen.TimeTypesAll)):
 			columnPlaceholders = append(columnPlaceholders, fmt.Sprintf("%s = CURRENT_TIMESTAMP", col.Name))
 		default:
-			return fmt.Errorf("unsupported type %s for soft delete column %s.%s", ts, col.Table.Name, col.Name)
+			return fmt.Errorf("unsupported type %s for soft delete column %s.%s", col.Type.String(), col.Table.Name, col.Name)
 		}
 
 	}

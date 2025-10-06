@@ -2,7 +2,6 @@ package gosqlgen
 
 import (
 	"fmt"
-	"slices"
 	"time"
 )
 
@@ -104,7 +103,8 @@ type valuerString struct {
 }
 
 func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []string) (valuerString, error) {
-	if !slices.Contains([]stringKind{stringKindBasic, stringKindJSON, stringKindUUID, stringKindEnum}, kind) {
+	valid := kind.IsValid()
+	if !valid {
 		return valuerString{}, Errorf("kind=%s: %w", kind, ErrStringKind)
 	}
 
@@ -174,11 +174,32 @@ func (v valuerString) uuid() (TestValue, error) {
 	return TestValue{Value: fmt.Sprintf("%s-%s-4%s-9%s-%s", v.randomString(8), v.randomString(4), v.randomString(3), v.randomString(3), v.randomString(12))}, nil
 }
 
+func (v valuerString) time(format string) (TestValue, error) {
+	return TestValue{Value: time.Now().Format(format)}, nil
+}
+
+func (v valuerString) ipv4() (TestValue, error) {
+	return TestValue{fmt.Sprintf("%d.%d.%d.%d", RandomInt(256), RandomInt(256), RandomInt(256), RandomInt(256))}, nil
+}
+
+func (v valuerString) ipv6() (TestValue, error) {
+	part := func() string {
+		return RandomString(4, []rune("0123456789abcdef"))
+
+	}
+
+	return TestValue{fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s:%s", part(), part(), part(), part(), part(), part(), part(), part())}, nil
+}
+
 func (v valuerString) New(prev TestValue) (TestValue, error) {
 	ps, ok := prev.Value.(string)
 
 	if !ok {
 		return TestValue{}, ErrPrevType
+	}
+
+	if tf, ok := v.kind.IsTime(); ok {
+		return v.time(tf)
 	}
 
 	switch v.kind {
@@ -190,6 +211,10 @@ func (v valuerString) New(prev TestValue) (TestValue, error) {
 		return v.uuid()
 	case stringKindEnum:
 		return v.enum(ps)
+	case stringKindIPV4:
+		return v.ipv4()
+	case stringKindIPV6:
+		return v.ipv6()
 	}
 
 	return TestValue{}, ErrStringKind
