@@ -1,10 +1,9 @@
-//go:generate go run ../../cmd/gosqlgen/main.go -driver gosqldriver_mysql
-package gosqldrivermysql
+//go:generate go run ../../cmd/gosqlgen/main.go -driver mattn_gosqlite3
+package mattngosqlite3
 
 import (
 	"database/sql"
 	"encoding/json"
-	"time"
 )
 
 type Continent string
@@ -26,8 +25,8 @@ type User struct {
 	payload    json.RawMessage `gosqlgen:"payload"`
 	Age        sql.NullInt32   `gosqlgen:"age; min 0; max 130"`
 	DrivesCar  sql.NullBool    `gosqlgen:"drives_car"`
-	Birthday   sql.NullTime    `gosqlgen:"birthday"`
-	Registered time.Time       `gosqlgen:"registered"`
+	Birthday   sql.NullString  `gosqlgen:"birthday; time RFC3339"`
+	Registered string          `gosqlgen:"registered; time RFC3339"`
 }
 
 // gosqlgen: admins; ignore test
@@ -47,14 +46,14 @@ type Country struct {
 
 // gosqlgen: addresses
 type Address struct {
-	RawId     int32        `gosqlgen:"_id;pk;ai"`
-	Id        string       `gosqlgen:"id;bk"`
-	Address   string       `gosqlgen:"address"`
-	UserId    int          `gosqlgen:"user_id;fk users._id"`
-	CountryId int          `gosqlgen:"country_id;fk countries._id"`
-	DeletedAt sql.NullTime `gosqlgen:"deleted_at;sd"`
-	IPV4      string       `gosqlgen:"ipv4; ipv4"`
-	IPV6      string       `gosqlgen:"ipv6; ipv6"`
+	RawId     int32          `gosqlgen:"_id;pk;ai"`
+	Id        string         `gosqlgen:"id;bk"`
+	Address   string         `gosqlgen:"address"`
+	UserId    int            `gosqlgen:"user_id;fk users._id"`
+	CountryId int            `gosqlgen:"country_id;fk countries._id"`
+	DeletedAt sql.NullString `gosqlgen:"deleted_at;sd;time RFC3339"`
+	IPV4      string         `gosqlgen:"ipv4; ipv4"`
+	IPV6      string         `gosqlgen:"ipv6; ipv6"`
 }
 
 // gosqlgen: addresses_book

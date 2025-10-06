@@ -134,6 +134,12 @@ func SetupTestDB(db *sql.DB, initSQL string) {
 	}
 }
 
+var database *sql.DB
+
+func getTestDB() (*sql.DB, func() error) {
+	return database, func() error { return nil }
+}
+
 func TestMain(m *testing.M) {
 	cleanup, db, err := CreateContainer()
 	if err != nil {
@@ -141,7 +147,7 @@ func TestMain(m *testing.M) {
 	}
 	defer db.Close()
 
-	testDb = db
+	database = db
 	initSQL := "init.sql"
 
 	SetupTestDB(db, initSQL)

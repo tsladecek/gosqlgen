@@ -37,6 +37,9 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 - `enum (val1, val2, val3)` - set of allowed values (relevant for string columns). *Format specifier*
 - `json` - string will be formatted as json (relevant for string columns). *Format specifier*
 - `uuid` - string will be formatted as uuid (relevant for string columns). *Format specifier*
+- `ipv4` - string will be formatted as ipv4 (xxx.xxx.xxx.xxx)
+- `ipv6` - string will be formatted as ipv6 (xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)
+- `time <format>` - string will be formatted as time in given format. The format should be a string of valid go format (e.g. RFC3339, Kitchen, etc.)
 
 *Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
 The tool will not raise any errors if more are used within the tag. In such case, the last (right
