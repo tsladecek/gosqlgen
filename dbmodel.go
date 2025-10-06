@@ -45,6 +45,8 @@ var (
 	BooleanTypesAll  = slices.Concat(BooleanTypes, BooleanTypesNull)
 )
 
+// IsOneOfTypes checks if given type or its underlying type is one
+// of provided type strings
 func IsOneOfTypes(typ types.Type, options []string) bool {
 	// Each type T has an underlying type: If T is one of the predeclared boolean, numeric, or string types, or a type literal, the corresponding underlying type is T itself. Otherwise, T's underlying type is the underlying type of the type to which T refers in its declaration.
 	t := typ.String()
@@ -194,7 +196,7 @@ const (
 	TableFlagIgnoreTestDelete = "ignore test delete"
 )
 
-func IsTableFlag(flag string) bool {
+func isTableFlag(flag string) bool {
 	return slices.Contains([]string{TableFlagIgnore, TableFlagIgnoreUpdate, TableFlagIgnoreDelete, TableFlagIgnoreTest, TableFlagIgnoreTestUpdate, TableFlagIgnoreTestDelete}, flag)
 }
 
@@ -521,7 +523,7 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 					for _, item := range items {
 						item = strings.TrimSpace(item)
 
-						if IsTableFlag(item) {
+						if isTableFlag(item) {
 							t.Flags = append(t.Flags, TableFlag(item))
 						}
 					}
@@ -573,7 +575,7 @@ func (d *DBModel) ReconcileRelationships() error {
 func (c *Column) inferTestValuer() error {
 	switch {
 	case IsOneOfTypes(c.Type, StringTypeJSON):
-		v, err := NewValuerString(c.length, stringKindJSON, c.charSet, c.valueSet)
+		v, err := newValuerString(c.length, stringKindJSON, c.charSet, c.valueSet)
 		if err != nil {
 			return err
 		}
@@ -585,7 +587,7 @@ func (c *Column) inferTestValuer() error {
 		if c.format == "" {
 			c.format = stringKindBasic
 		}
-		v, err := NewValuerString(c.length, c.format, c.charSet, c.valueSet)
+		v, err := newValuerString(c.length, c.format, c.charSet, c.valueSet)
 		if err != nil {
 			return err
 		}
@@ -594,7 +596,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 
 	case IsOneOfTypes(c.Type, NumericIntegerTypesAll):
-		v, err := NewValuerNumeric(c.min, c.max, false)
+		v, err := newValuerNumeric(c.min, c.max, false)
 
 		if err != nil {
 			return err
@@ -603,7 +605,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 
 	case IsOneOfTypes(c.Type, NumericFloatTypesAll):
-		v, err := NewValuerNumeric(c.min, c.max, true)
+		v, err := newValuerNumeric(c.min, c.max, true)
 
 		if err != nil {
 			return err
@@ -612,7 +614,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 
 	case IsOneOfTypes(c.Type, BooleanTypesAll):
-		v, err := NewValuerBoolean()
+		v, err := newValuerBoolean()
 
 		if err != nil {
 			return err
@@ -621,7 +623,7 @@ func (c *Column) inferTestValuer() error {
 		return nil
 
 	case IsOneOfTypes(c.Type, TimeTypesAll):
-		v, err := NewValuerTime()
+		v, err := newValuerTime()
 
 		if err != nil {
 			return err

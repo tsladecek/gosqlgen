@@ -23,7 +23,7 @@ type insertedTable struct {
 
 func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*insertedTable, error) {
 	d := []string{}
-	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, RandomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0), table: t, children: make([]*insertedTable, 0)}
+	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, randomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0), table: t, children: make([]*insertedTable, 0)}
 
 	for _, c := range t.Columns {
 		if c.PrimaryKey && c.AutoIncrement {
@@ -83,7 +83,7 @@ type testSuite struct {
 //go:embed templates
 var templateFS embed.FS
 
-func NewTestSuite() (*testSuite, error) {
+func NewTestSuite() (TestSuite, error) {
 	tmpl, err := template.ParseFS(templateFS, "templates/*.tmpl")
 
 	if err != nil {
@@ -234,6 +234,7 @@ func (ts *testSuite) ExecuteTemplate(w io.Writer, tmpl string, data any) error {
 	return ts.templates.ExecuteTemplate(w, tmpl, data)
 }
 
+// GenerateTests writes generated test code to the provided io.Writer
 func GenerateTests(ts TestSuite, w io.Writer, table *Table) error {
 	var tempW bytes.Buffer
 

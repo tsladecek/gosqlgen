@@ -823,10 +823,10 @@ func TestIsOneOfTypes(t *testing.T) {
 
 func TestIsTableFlag(t *testing.T) {
 	for _, f := range []string{"ignore", "ignore update", "ignore delete", "ignore test", "ignore test update", "ignore test delete"} {
-		assert.True(t, IsTableFlag(f))
+		assert.True(t, isTableFlag(f))
 	}
 
-	assert.False(t, IsTableFlag("invalid"))
+	assert.False(t, isTableFlag("invalid"))
 }
 
 func TestTableHasFlag(t *testing.T) {

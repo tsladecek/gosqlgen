@@ -19,6 +19,7 @@ func callingFuncInfo() (int, string) {
 	return n, ""
 }
 
+// Errorf formats error string and adds line number and calling func path to the error message
 func Errorf(format string, a ...any) error {
 	lineNumber, fn := callingFuncInfo()
 	format = "\n[%s:%d]:\t" + format

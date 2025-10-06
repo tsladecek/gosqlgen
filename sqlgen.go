@@ -57,6 +57,8 @@ type TestSuite interface {
 	ExecuteTemplate(w io.Writer, tmpl string, data any) error
 }
 
+// CreateTemplates constructs generated code and code from the given DBModel.
+// The resulting code is formatted
 func CreateTemplates(d Driver, model *DBModel, ts TestSuite, outputPath, outputTestPath string) error {
 	writer := new(bytes.Buffer)
 	testWriter := new(bytes.Buffer)

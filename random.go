@@ -4,14 +4,14 @@ import "math/rand"
 
 var r = rand.New(rand.NewSource(1618))
 
-func RandomInt(max int) int {
+func randomInt(max int) int {
 	return r.Intn(max)
 }
 
-func RandomString(length int, alphabet []rune) string {
+func randomString(length int, alphabet []rune) string {
 	out := make([]rune, length)
 	for i := range length {
-		out[i] = alphabet[RandomInt(len(alphabet))]
+		out[i] = alphabet[randomInt(len(alphabet))]
 	}
 
 	return string(out)
