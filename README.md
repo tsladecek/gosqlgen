@@ -47,6 +47,15 @@ most) format specifier will be used
 
 ## Install
 
+### Preferred
+
+Download the binary from the [GitHub Releases](https://github.com/tsladecek/gosqlgen/releases) page and place it on your path
+
+### Alternative
+
+> [!NOTE]
+> The `-version` flag wont work in this case and will only print "dev"
+
 ```shell
 go install github.com/tsladecek/gosqlgen/cmd/gosqlgen@latest
 ```
@@ -111,3 +120,18 @@ func (t *Address) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
 ```
 
 and tests in `generatedMethods_test.go`. For the tests to work properly you have to setup the database and point the `testDb` var to the connection.
+
+## How to use this package
+The goal of the tool is to streamline the generation of basic sql methods
+(get, create, update, delete) for tables, declared as structs.
+If this is not your case, you can stop reading.
+
+The package is meant to be used with `go generate`,
+although it can be used as a cli tool (the `-in` argument allows for specifying input go file).
+The tool generates non exported methods on provided struct types.
+This is intentional and it is the responsibility of the user to export what is necessary.
+It also allows for combining different methods of different struct types,
+although this is not ideal since simple SQL JOIN statement is superior.
+
+The tool will not report any illogical table definitions, unless they prevent the generation of the code.
+
