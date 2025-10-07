@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"time"
 )
 
 func logf(t *testing.T, format string, args ...any) {
@@ -51,7 +53,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	t.Run("getInsert", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_egflfjae := User{Id: `OadpyPYHgcyrI0hAFi1MdJUBT54lF6OC`, Name: []byte(`AUYRNH7Qzo6LvaHQGkQtxeJBsc7jMKtn`), payload: []byte(`{"EKrioGhL":"cXQvaDIL", "GAU7PdSC":"fGaCCsZE"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_egflfjae := User{Id: `OadpyPYHgcyrI0hAFi1MdJUBT54lF6OC`, Name: []byte(`AUYRNH7Qzo6LvaHQGkQtxeJBsc7jMKtn`), payload: []byte(`{"EKrioGhL":"cXQvaDIL", "GAU7PdSC":"fGaCCsZE"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_egflfjae.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_keghalfd := Country{Id: `bDQYy5KH2iT5g8VCUxT1dlCwGmhotNe6`, Name: `lZN50E5aqtqQ2XXJExBfYs1MSOyCENea`, GPS: `Yj173JTmXMXb8PIZf1uajtHmJU3WQqvl`, Continent: `Asia`}
@@ -79,7 +81,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_laakdgaj := User{Id: `FWgnFCy66yR3ksE5xESxHNjekTNLMAbW`, Name: []byte(`HBr8pjoWXwwOPDhjpRywKBWRioyItruo`), payload: []byte(`{"ADzdEZDY":"DJxFfKER", "03UmQc0s":"BTOPMD0p"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_laakdgaj := User{Id: `FWgnFCy66yR3ksE5xESxHNjekTNLMAbW`, Name: []byte(`HBr8pjoWXwwOPDhjpRywKBWRioyItruo`), payload: []byte(`{"ADzdEZDY":"DJxFfKER", "03UmQc0s":"BTOPMD0p"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_laakdgaj.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_kidhjbah := Country{Id: `Y1NaLpD5LEx1m7Mx3R65A8kXxUV8i2BO`, Name: `XFw8IPdSpH3y4JluojvynGjz2kTvNoJ2`, GPS: `acjqI0dMp4SBklUMT1ApYQYGjFG4mzjX`, Continent: `Asia`}
@@ -89,7 +91,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 		err = tbl_addresses_eafjibdf.insert(ctx, testDb)
 		requireNoError(t, err)
 
-		tbl_users_glahieda := User{Id: `bYuWNjM7mozi4Jj7NWFEXmIqzN3iuTQt`, Name: []byte(`xckscutaHpEiGBt7qc0hEfN3CKdjLWp1`), payload: []byte(`{"mxmmNxzz":"Jc04ytW8", "YUTO1QoC":"qCKi7ZaT"}`), Age: sql.NullInt32{Valid: true, Int32: 0}, DrivesCar: sql.NullBool{Valid: true, Bool: false}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_glahieda := User{Id: `bYuWNjM7mozi4Jj7NWFEXmIqzN3iuTQt`, Name: []byte(`xckscutaHpEiGBt7qc0hEfN3CKdjLWp1`), payload: []byte(`{"mxmmNxzz":"Jc04ytW8", "YUTO1QoC":"qCKi7ZaT"}`), Age: sql.NullInt32{Valid: true, Int32: 0}, DrivesCar: sql.NullBool{Valid: true, Bool: false}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_glahieda.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_ljfbajhb := Country{Id: `H3K2xVNUmCGbFOduFdmuS22Aeo7GT5W4`, Name: `Q7xWp84Jy85PwwgGNGDeIHQFeKZ1Mk80`, GPS: `EGlkVQtwBZzNxdY7PxMEm4stnlcETnXF`, Continent: `Europe`}
@@ -110,7 +112,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 		assertEqual(t, tbl_addresses_eafjibdf, gotByPk)
 
 		// Update By Business Keys
-		tbl_users_cgheiada := User{Id: `lAkkAk3R6qywiKjDqFE1YphSBdE3ojaI`, Name: []byte(`flDAHS4DrRrTgXzhDN4EQ7aFPalM34FB`), payload: []byte(`{"SmO6ArrF":"BPo8JkRg", "mSi7wlwC":"PuW8iI8U"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_cgheiada := User{Id: `lAkkAk3R6qywiKjDqFE1YphSBdE3ojaI`, Name: []byte(`flDAHS4DrRrTgXzhDN4EQ7aFPalM34FB`), payload: []byte(`{"SmO6ArrF":"BPo8JkRg", "mSi7wlwC":"PuW8iI8U"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_cgheiada.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_kiclfbaj := Country{Id: `V1y4k5xJSM7vShEzd6wgS3VQR6kK6gxo`, Name: `uKlKNtl1M4i6kz4VxfcJrdz3WWkR73co`, GPS: `VPbbmna7RKs7etEZ7n7DzfIF2Ye3agmc`, Continent: `Asia`}
@@ -135,7 +137,7 @@ func TestGoSQLGen_Address(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_dfakhbeg := User{Id: `Pu3flnc2ScZVJqagrYockYtU2bO3dBel`, Name: []byte(`TsQ1S1AC5MpeKhbG4IC5ZqxAIl8HuKoP`), payload: []byte(`{"RqcdvnK9":"XAx3Twew", "IdXAIWXc":"GjiAvgzo"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_dfakhbeg := User{Id: `Pu3flnc2ScZVJqagrYockYtU2bO3dBel`, Name: []byte(`TsQ1S1AC5MpeKhbG4IC5ZqxAIl8HuKoP`), payload: []byte(`{"RqcdvnK9":"XAx3Twew", "IdXAIWXc":"GjiAvgzo"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_dfakhbeg.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_ffacllfi := Country{Id: `hvdGGh7TQ0mJcunovO0n0L2rkSUb1xIu`, Name: `Qgca0Ap7rTqBDeZHWACouKKANDfxW4ly`, GPS: `MKtYrKvtOcFCBzExhQSXss1X4x35ZCPL`, Continent: `Asia`}
@@ -166,7 +168,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	t.Run("getInsert", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_lckjibab := User{Id: `lX5GXseVW4WlQ6iE8LP2qdu0QrRxEUQO`, Name: []byte(`m1MBCNO6SMIst0lKpBiZmveCraLa5ukb`), payload: []byte(`{"ahVBhxgI":"c67BRZQH", "leAXF9Q9":"TX2jdu45"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_lckjibab := User{Id: `lX5GXseVW4WlQ6iE8LP2qdu0QrRxEUQO`, Name: []byte(`m1MBCNO6SMIst0lKpBiZmveCraLa5ukb`), payload: []byte(`{"ahVBhxgI":"c67BRZQH", "leAXF9Q9":"TX2jdu45"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_lckjibab.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_hahaaldj := Country{Id: `F8ohaMP53FvTWyT0fl5etWggJ5pCyJQ2`, Name: `Oeu23j644LwKd0Gojx4I8yNyGAQs1dQX`, GPS: `FQXu1x6wmpszDOMwxkvqvGqHt8G1hDHM`, Continent: `Asia`}
@@ -197,7 +199,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_dikaafic := User{Id: `d5RAVMMnDmJMMK2YmSDtFdv6OjVL4Rel`, Name: []byte(`NQasYZWn8OarTcgj73DVMpqhK4CSoVJn`), payload: []byte(`{"HRAPoNkv":"4SbaNLaE", "f7j8HFHA":"HkDpXuS8"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_dikaafic := User{Id: `d5RAVMMnDmJMMK2YmSDtFdv6OjVL4Rel`, Name: []byte(`NQasYZWn8OarTcgj73DVMpqhK4CSoVJn`), payload: []byte(`{"HRAPoNkv":"4SbaNLaE", "f7j8HFHA":"HkDpXuS8"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_dikaafic.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_fcflkidg := Country{Id: `EbkUXNxTdWQFauxcqzj6N7WtmUtcLBG7`, Name: `fpRtzwRVbkjlG7EqfqpDC8tqwGiIvQro`, GPS: `lNveUE3WsQvyVcdyZXxWXdzPQ1RvC6kI`, Continent: `Asia`}
@@ -210,7 +212,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 		err = tbl_addresses_book_gkbgfllf.insert(ctx, testDb)
 		requireNoError(t, err)
 
-		tbl_users_ghbhaccd := User{Id: `WMACsSZzdPq5DIEiHhYwXDmNTnK5n61P`, Name: []byte(`uR7PzMHfoEaWegI3PvEX1DiyllUkIuk3`), payload: []byte(`{"FvittoaY":"PvWFjH81", "2Z4CIdgm":"CsRaG5jr"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_ghbhaccd := User{Id: `WMACsSZzdPq5DIEiHhYwXDmNTnK5n61P`, Name: []byte(`uR7PzMHfoEaWegI3PvEX1DiyllUkIuk3`), payload: []byte(`{"FvittoaY":"PvWFjH81", "2Z4CIdgm":"CsRaG5jr"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_ghbhaccd.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_hhajcbae := Country{Id: `W5jwVk4MzQBSjNiNCiegV1yvn7XHpHYP`, Name: `weulSBBHKrFwoOuxNkPxkID78a7bcyvO`, GPS: `40UaeGNOedNtDUnF3urt0sBtpDm0aF6e`, Continent: `Asia`}
@@ -230,7 +232,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 		assertEqual(t, tbl_addresses_book_gkbgfllf, gotByPk)
 
 		// Update By Business Keys
-		tbl_users_fckehkae := User{Id: `L3RDwxVdCDAqTwoKEvXb6YBQuHd6La1q`, Name: []byte(`xJSJUJAVj1m0HpymrThD0fsbRHUanmiD`), payload: []byte(`{"RzjJskGt":"XhxTpzcu", "pvRyb7kK":"o1Q4rqvI"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_fckehkae := User{Id: `L3RDwxVdCDAqTwoKEvXb6YBQuHd6La1q`, Name: []byte(`xJSJUJAVj1m0HpymrThD0fsbRHUanmiD`), payload: []byte(`{"RzjJskGt":"XhxTpzcu", "pvRyb7kK":"o1Q4rqvI"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_fckehkae.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_bbaeaelb := Country{Id: `zdPfblUXEsKXJcSr0PavKdRi47OdEmSE`, Name: `Anqob6U30Ty5pJqbDddR86ciem7ZMa7I`, GPS: `RixQuurA7r0Qek6bdCbVytX2WaGpQpNZ`, Continent: `Asia`}
@@ -254,7 +256,7 @@ func TestGoSQLGen_AddressBook(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_hcfdglfa := User{Id: `mOn1xKR0ctVTiGyN6uy3fWuYXOiwidys`, Name: []byte(`ZKtEFtSw1TJBPAxYZfvEEIs52ZyFIiaW`), payload: []byte(`{"Awlt9C96":"tqZLnDeV", "AAzxOQNP":"JuHQDUS3"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_hcfdglfa := User{Id: `mOn1xKR0ctVTiGyN6uy3fWuYXOiwidys`, Name: []byte(`ZKtEFtSw1TJBPAxYZfvEEIs52ZyFIiaW`), payload: []byte(`{"Awlt9C96":"tqZLnDeV", "AAzxOQNP":"JuHQDUS3"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_hcfdglfa.insert(ctx, testDb)
 		requireNoError(t, err)
 		tbl_countries_akblabig := Country{Id: `Bir7nGMm1WUZ83NjeJfOjW2TRU4HW2rX`, Name: `SDwKbClabPyOwA7u1MBbMbDrma0QqOMN`, GPS: `GVkhYJUKKC375P624PXZhSpcq3vfxF2j`, Continent: `Asia`}
@@ -367,7 +369,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	t.Run("getInsert", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_gcikdcdd := User{Id: `gwfpWBm2CUzSsqPVEzY8cKf6zgFTYXs6`, Name: []byte(`xdVfPFSyKHjRNJrzY4dW6v6WQS0MXfu8`), payload: []byte(`{"yjoqhgHZ":"ffoajaJC", "d748MfNP":"MKELFxDV"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_gcikdcdd := User{Id: `gwfpWBm2CUzSsqPVEzY8cKf6zgFTYXs6`, Name: []byte(`xdVfPFSyKHjRNJrzY4dW6v6WQS0MXfu8`), payload: []byte(`{"yjoqhgHZ":"ffoajaJC", "d748MfNP":"MKELFxDV"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_gcikdcdd.insert(ctx, testDb)
 		requireNoError(t, err)
 
@@ -389,7 +391,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_aacahlcc := User{Id: `20F3YUM8VBmJzJIt7BYUXvNh0BrmUyag`, Name: []byte(`zoqjVufiYIcKM74GXnQTfGj1sRf2qRJk`), payload: []byte(`{"ZImx7AFb":"P8NYAir4", "S5o6VjIF":"ke2fdu6O"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_aacahlcc := User{Id: `20F3YUM8VBmJzJIt7BYUXvNh0BrmUyag`, Name: []byte(`zoqjVufiYIcKM74GXnQTfGj1sRf2qRJk`), payload: []byte(`{"ZImx7AFb":"P8NYAir4", "S5o6VjIF":"ke2fdu6O"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_aacahlcc.insert(ctx, testDb)
 		requireNoError(t, err)
 
@@ -397,8 +399,8 @@ func TestGoSQLGen_User(t *testing.T) {
 		tbl_users_aacahlcc.payload = []byte(`{"oCGGdiAs":"EwDderFc", "crRqP4GX":"NQXM6RC9"}`)
 		tbl_users_aacahlcc.Age = sql.NullInt32{Valid: true, Int32: 0}
 		tbl_users_aacahlcc.DrivesCar = sql.NullBool{Valid: true, Bool: false}
-		tbl_users_aacahlcc.Birthday = sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}
-		tbl_users_aacahlcc.Registered = `2025-10-06T17:51:33+02:00` // Update By Primary Keys
+		tbl_users_aacahlcc.Birthday = sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
+		tbl_users_aacahlcc.Registered = time.Now().UTC().Truncate(time.Second).Format(time.RFC3339) // Update By Primary Keys
 		err = tbl_users_aacahlcc.updateByPrimaryKeys(ctx, testDb)
 		requireNoError(t, err)
 
@@ -412,8 +414,8 @@ func TestGoSQLGen_User(t *testing.T) {
 		tbl_users_aacahlcc.payload = []byte(`{"JoZtAyk1":"IbYd1KPe", "MZrhDug0":"jFU8qq7s"}`)
 		tbl_users_aacahlcc.Age = sql.NullInt32{Valid: true, Int32: 1}
 		tbl_users_aacahlcc.DrivesCar = sql.NullBool{Valid: true, Bool: true}
-		tbl_users_aacahlcc.Birthday = sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}
-		tbl_users_aacahlcc.Registered = `2025-10-06T17:51:33+02:00`
+		tbl_users_aacahlcc.Birthday = sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
+		tbl_users_aacahlcc.Registered = time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)
 		err = tbl_users_aacahlcc.updateByBusinessKeys(ctx, testDb)
 		requireNoError(t, err)
 
@@ -427,7 +429,7 @@ func TestGoSQLGen_User(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		testDb, close := getTestDB()
 		defer close()
-		tbl_users_hhgaaglk := User{Id: `iZnvFCPpasoxixcAvpUFvzpkzTgIMUsE`, Name: []byte(`SbWLvTOyk81BscTGE5M5Na38XOEjzyo5`), payload: []byte(`{"qq8WhiCI":"JwUWv05I", "PFP5g4Xi":"NbPdw10i"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: "2025-10-06T17:51:33+02:00"}, Registered: `2025-10-06T17:51:33+02:00`}
+		tbl_users_hhgaaglk := User{Id: `iZnvFCPpasoxixcAvpUFvzpkzTgIMUsE`, Name: []byte(`SbWLvTOyk81BscTGE5M5Na38XOEjzyo5`), payload: []byte(`{"qq8WhiCI":"JwUWv05I", "PFP5g4Xi":"NbPdw10i"}`), Age: sql.NullInt32{Valid: true, Int32: 1}, DrivesCar: sql.NullBool{Valid: true, Bool: true}, Birthday: sql.NullString{Valid: true, String: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}, Registered: time.Now().UTC().Truncate(time.Second).Format(time.RFC3339)}
 		err = tbl_users_hhgaaglk.insert(ctx, testDb)
 		requireNoError(t, err)
 

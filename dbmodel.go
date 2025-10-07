@@ -55,14 +55,14 @@ func IsOneOfTypes(typ types.Type, options []string) bool {
 	return slices.Contains(options, t) || slices.Contains(options, u)
 }
 
-func (tv TestValue) Format(columnType types.Type) (string, error) {
-	t := columnType.String()
-	u := columnType.Underlying().String()
+func (tv TestValue) Format(c *Column) (string, error) {
+	t := c.Type.String()
+	u := c.Type.Underlying().String()
 
-	if IsOneOfTypes(columnType, NumericTypesAll) {
+	if IsOneOfTypes(c.Type, NumericTypesAll) {
 		switch {
 		// Numeric
-		case IsOneOfTypes(columnType, NumericTypes):
+		case IsOneOfTypes(c.Type, NumericTypes):
 			return fmt.Sprintf("%v", tv.Value), nil
 		case t == "database/sql.NullInt16" || u == "database/sql.NullInt16":
 			return fmt.Sprintf("sql.NullInt16{Valid: true, Int16: %d}", tv.Value), nil
@@ -73,7 +73,20 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 		case t == "database/sql.NullFloat64" || u == "database/sql.NullFloat64":
 			return fmt.Sprintf("sql.NullFloat64{Valid: true, Float64: %v}", tv.Value), nil
 		}
-	} else if IsOneOfTypes(columnType, StringTypesAll) {
+	} else if IsOneOfTypes(c.Type, StringTypesAll) {
+		_, isTime := c.format.IsTime()
+
+		if isTime {
+			val := fmt.Sprintf("time.Now().UTC().Truncate(time.Second).Format(time.%s)", c.format)
+			switch {
+			case t == "string" || u == "string":
+				return val, nil
+			case t == "database/sql.NullString":
+				return fmt.Sprintf("sql.NullString{Valid: true, String: %s}", val), nil
+			}
+
+		}
+
 		switch {
 		case t == "string" || u == "string":
 			return fmt.Sprintf("`%s`", tv.Value), nil
@@ -88,14 +101,14 @@ func (tv TestValue) Format(columnType types.Type) (string, error) {
 		case t == "database/sql.NullByte":
 			return fmt.Sprintf("sql.NullByte{Valid: true, Byte: byte('%s')}", tv.Value), nil
 		}
-	} else if IsOneOfTypes(columnType, TimeTypesAll) {
+	} else if IsOneOfTypes(c.Type, TimeTypesAll) {
 		switch {
 		case t == "time.Time" || u == "time.Time":
 			return "time.Now().UTC().Truncate(time.Second)", nil
 		case t == "database/sql.NullTime" || u == "database/sql.NullTime":
 			return "sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}", nil
 		}
-	} else if IsOneOfTypes(columnType, BooleanTypesAll) {
+	} else if IsOneOfTypes(c.Type, BooleanTypesAll) {
 		switch {
 		case t == "bool" || u == "bool":
 			return fmt.Sprintf("%t", tv.Value), nil
@@ -157,32 +170,34 @@ func (sk *stringKind) IsValid() bool {
 	return false
 }
 
+// IsTime returns the timeformat string that can be used in .Format methods on time.Time
+// instances of the stringKind if it is a time stringKind
 func (sk stringKind) IsTime() (string, bool) {
 	tf, ok := timeFormats[string(sk)]
 	return tf, ok
 }
 
 type Column struct {
-	Name          string     // name of the sql column
-	FieldName     string     // name of the field in the struct
-	PrimaryKey    bool       // is this a primary key column?
-	ForeignKey    *Column    // address of the reference column. nil if not FK
-	Table         *Table     // address of the table this Column belongs to
-	Type          types.Type // go type of the column in the struct
-	SoftDelete    bool       // does this column represent soft deletion (sd)
-	BusinessKey   bool       // is this business key (bk)
-	AutoIncrement bool       // is this auto incremented? Important for inserts, since this column must be fetched
+	Name          string // name of the sql column
+	FieldName     string // name of the field in the struct
+	PrimaryKey    bool
+	BusinessKey   bool
+	ForeignKey    *Column
+	Table         *Table
+	Type          types.Type
+	SoftDelete    bool
+	AutoIncrement bool // important for inserts, since this column must be fetched from db either with RETURNING claim or LastInsertId
+	TestValuer    TestValuer
 
 	// useful only for test valuer
-	min        float64
-	max        float64
-	length     int
-	charSet    []rune
-	format     stringKind
-	valueSet   []string
-	TestValuer TestValuer // TestValuer
+	min      float64
+	max      float64
+	length   int
+	charSet  []rune
+	format   stringKind
+	valueSet []string
 
-	fk string
+	fk string // only temporary field until the dbModel relationships are reconciled
 }
 
 type TableFlag string
@@ -207,6 +222,7 @@ type Table struct {
 	Flags      []TableFlag
 }
 
+// HasFlag checks if table has requested flag
 func (t *Table) HasFlag(flag TableFlag) bool {
 	return slices.Contains(t.Flags, flag)
 }
@@ -216,6 +232,7 @@ type DBModel struct {
 	PackageName string
 }
 
+// Debug prints the entire DB model to the stdout
 func (d DBModel) Debug() {
 	fmt.Println("---DBModel Debug---")
 	fmt.Printf("--PackageName: %s--\n", d.PackageName)
@@ -233,10 +250,10 @@ func (d DBModel) Debug() {
 	}
 }
 
-// FKTableAndColumn parses the table name and the column name
+// fkTableAndColumn parses the table name and the column name
 // from the fk tag specification in format "table.column"
 // Returns error if there are not exactly two dot separated fields separated
-func (c *Column) FKTableAndColumn() (string, string, error) {
+func (c *Column) fkTableAndColumn() (string, string, error) {
 	m := strings.Split(c.fk, ".")
 	if len(m) != 2 {
 		return "", "", ErrFKFieldNumber
@@ -256,9 +273,9 @@ func (c *Column) FKTableAndColumn() (string, string, error) {
 	return table, column, nil
 }
 
-// ExtractTagContent extracts the content of a given tagName enclosed
+// extractTagContent extracts the content of a given tagName enclosed
 // within double quotes
-func ExtractTagContent(tagName, input string) (string, error) {
+func extractTagContent(tagName, input string) (string, error) {
 	prefix := fmt.Sprintf(`%s:"`, tagName)
 	suffix := `"`
 
@@ -382,7 +399,7 @@ var timeFormats = map[string]string{"Layout": time.Layout, "ANSIC": time.ANSIC, 
 // in a temporary private field "fk". All relationships are reconcilled
 // after all tables have been parsed
 func NewColumn(tag string) (*Column, error) {
-	tag, err := ExtractTagContent(TagPrefix, tag)
+	tag, err := extractTagContent(TagPrefix, tag)
 
 	if err != nil {
 		return nil, Errorf("tag=%s: %w", tag, err)
@@ -489,8 +506,8 @@ func NewColumn(tag string) (*Column, error) {
 }
 
 // GetColumn loops over columns in the table and returns
-// the one with matching column name. In case that no is found,
-// an error is returned
+// the one with matching column name. Returns error if the column
+// is not found
 func (t *Table) GetColumn(columnName string) (*Column, error) {
 	for _, c := range t.Columns {
 		if c.Name == columnName {
@@ -501,11 +518,11 @@ func (t *Table) GetColumn(columnName string) (*Column, error) {
 	return nil, ErrColumnNotFound
 }
 
-// ParseTableName expects to find a table annotation in one of struct type
+// parseTableName expects to find a table annotation in one of struct type
 // comment lines. The annotation should be in format: gosqlgen: table_name[;flags]
 // The comment must be on a single line. It is expected that the code is properly
 // formatted with gofmt
-func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
+func (t *Table) parseTableName(cgroup *ast.CommentGroup) error {
 	stripPrefix := fmt.Sprintf("// %s:", TagPrefix)
 	if cgroup != nil {
 		for _, c := range cgroup.List {
@@ -536,11 +553,11 @@ func (t *Table) ParseTableName(cgroup *ast.CommentGroup) error {
 	return ErrNoTableTag
 }
 
-// ReconcileRelationships loops over every parsed column in
+// reconcileRelationships loops over every parsed column in
 // every table and checks if the column should be a foreign key,
 // in which case it finds corresponding referenced *Column and
 // stores the pointer in the ForeignKey field
-func (d *DBModel) ReconcileRelationships() error {
+func (d *DBModel) reconcileRelationships() error {
 	tmap := make(map[string]*Table, len(d.Tables))
 	for _, t := range d.Tables {
 		tmap[t.Name] = t
@@ -549,7 +566,7 @@ func (d *DBModel) ReconcileRelationships() error {
 	for _, t := range d.Tables {
 		for _, c := range t.Columns {
 			if c.fk != "" {
-				table, column, err := c.FKTableAndColumn()
+				table, column, err := c.fkTableAndColumn()
 
 				if err != nil {
 					return Errorf("fk=%s: %w", c.fk, err)
@@ -670,7 +687,7 @@ MainLoop:
 			}
 			table.StructName = typeSpec.Name.Name
 
-			err := table.ParseTableName(genDecl.Doc)
+			err := table.parseTableName(genDecl.Doc)
 			if errors.Is(err, ErrNoTableTag) {
 				continue MainLoop
 			}
@@ -705,7 +722,7 @@ MainLoop:
 		dbModel.Tables = append(dbModel.Tables, &table)
 	}
 
-	err = dbModel.ReconcileRelationships()
+	err = dbModel.reconcileRelationships()
 	if err != nil {
 		return nil, Errorf("when reconciling relationships: %w", err)
 	}
@@ -717,9 +734,9 @@ MainLoop:
 	return &dbModel, nil
 }
 
-// PkAndBk returns the primary key and business key columns
+// primaryKeysAndBusinessKeys returns the primary key and business key columns
 // of the table. Error is returned only if no primary key was found
-func (t *Table) PkAndBk() ([]*Column, []*Column, error) {
+func (t *Table) primaryKeysAndBusinessKeys() ([]*Column, []*Column, error) {
 	pk := make([]*Column, 0)
 	bk := make([]*Column, 0)
 

@@ -38,7 +38,7 @@ func TestFKTableAndColumn(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Column{fk: tt.fk}
-			ta, co, err := c.FKTableAndColumn()
+			ta, co, err := c.fkTableAndColumn()
 			require.Equal(t, tt.expectedErr == nil, err == nil)
 
 			if tt.expectedErr == nil {
@@ -70,7 +70,7 @@ func TestExtractTagContent(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := ExtractTagContent(tt.tagName, tt.input)
+			c, err := extractTagContent(tt.tagName, tt.input)
 			require.Equal(t, tt.expectedErr == nil, err == nil)
 
 			if tt.expectedErr == nil {
@@ -166,7 +166,7 @@ func TestTableParseTableName(t *testing.T) {
 			cg := &ast.CommentGroup{List: comments}
 
 			tab := Table{}
-			err := tab.ParseTableName(cg)
+			err := tab.parseTableName(cg)
 
 			require.Equal(t, tt.expectedErr == nil, err == nil)
 
@@ -188,7 +188,7 @@ func TestDBModelReconcileRelationships(t *testing.T) {
 		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
 
 		dbModel := DBModel{Tables: []*Table{table1, table2}}
-		err := dbModel.ReconcileRelationships()
+		err := dbModel.reconcileRelationships()
 		require.NoError(t, err)
 		require.NotNil(t, column2.ForeignKey)
 		assert.Equal(t, column1, column2.ForeignKey)
@@ -202,7 +202,7 @@ func TestDBModelReconcileRelationships(t *testing.T) {
 		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
 
 		dbModel := DBModel{Tables: []*Table{table1, table2}}
-		err := dbModel.ReconcileRelationships()
+		err := dbModel.reconcileRelationships()
 		require.Error(t, err)
 		require.ErrorIs(t, err, ErrFKTableEmpty)
 	})
@@ -215,7 +215,7 @@ func TestDBModelReconcileRelationships(t *testing.T) {
 		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
 
 		dbModel := DBModel{Tables: []*Table{table1, table2}}
-		err := dbModel.ReconcileRelationships()
+		err := dbModel.reconcileRelationships()
 		require.Error(t, err)
 		require.ErrorIs(t, err, ErrFKTableNotFoundInModel)
 	})
@@ -228,7 +228,7 @@ func TestDBModelReconcileRelationships(t *testing.T) {
 		table2 := &Table{Name: "table2", Columns: []*Column{column2}}
 
 		dbModel := DBModel{Tables: []*Table{table1, table2}}
-		err := dbModel.ReconcileRelationships()
+		err := dbModel.reconcileRelationships()
 		require.Error(t, err)
 		require.ErrorIs(t, err, ErrColumnNotFound)
 	})
@@ -524,7 +524,7 @@ func TestTablePkAndBk(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			pk, bk, err := tt.inputTable.PkAndBk()
+			pk, bk, err := tt.inputTable.primaryKeysAndBusinessKeys()
 			assert.Equal(t, tt.expectedError == nil, err == nil)
 			if err == nil {
 				assert.Len(t, pk, len(tt.expectedPK))
@@ -647,28 +647,28 @@ func TestTestValueFormat(t *testing.T) {
 	cases := []struct {
 		name          string
 		value         TestValue
-		typ           types.Type
+		col           *Column
 		expectedValue string
 		expectedErr   bool
 	}{
 		{
 			name:          "Basic Int Type (int)",
 			value:         TestValue{Value: 123},
-			typ:           mockType{typeString: "int", underlyingTypeString: "int"},
+			col:           &Column{Type: mockType{typeString: "int", underlyingTypeString: "int"}},
 			expectedValue: "123",
 			expectedErr:   false,
 		},
 		{
 			name:          "Aliased Int Type (int64)",
 			value:         TestValue{Value: 98765},
-			typ:           mockType{typeString: "MyID", underlyingTypeString: "int64"},
+			col:           &Column{Type: mockType{typeString: "MyID", underlyingTypeString: "int64"}},
 			expectedValue: "98765",
 			expectedErr:   false,
 		},
 		{
 			name:          "Basic Float Type (float64)",
 			value:         TestValue{Value: 456.78},
-			typ:           mockType{typeString: "float64", underlyingTypeString: "float64"},
+			col:           &Column{Type: mockType{typeString: "float64", underlyingTypeString: "float64"}},
 			expectedValue: "456.78",
 			expectedErr:   false,
 		},
@@ -677,21 +677,21 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "sql.NullInt16 Type",
 			value:         TestValue{Value: 16},
-			typ:           mockType{typeString: "database/sql.NullInt16", underlyingTypeString: "database/sql.NullInt16"},
+			col:           &Column{Type: mockType{typeString: "database/sql.NullInt16", underlyingTypeString: "database/sql.NullInt16"}},
 			expectedValue: "sql.NullInt16{Valid: true, Int16: 16}",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullInt64 Type (Aliased Underlying)",
 			value:         TestValue{Value: 64000},
-			typ:           mockType{typeString: "MyNullID", underlyingTypeString: "database/sql.NullInt64"},
+			col:           &Column{Type: mockType{typeString: "MyNullID", underlyingTypeString: "database/sql.NullInt64"}},
 			expectedValue: "sql.NullInt64{Valid: true, Int64: 64000}",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullFloat64 Type",
 			value:         TestValue{Value: 99.125},
-			typ:           mockType{typeString: "database/sql.NullFloat64", underlyingTypeString: "database/sql.NullFloat64"},
+			col:           &Column{Type: mockType{typeString: "database/sql.NullFloat64", underlyingTypeString: "database/sql.NullFloat64"}},
 			expectedValue: "sql.NullFloat64{Valid: true, Float64: 99.125}",
 			expectedErr:   false,
 		},
@@ -700,28 +700,28 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Basic String Type",
 			value:         TestValue{Value: "hello world"},
-			typ:           mockType{typeString: "string", underlyingTypeString: "string"},
+			col:           &Column{Type: mockType{typeString: "string", underlyingTypeString: "string"}},
 			expectedValue: "`hello world`",
 			expectedErr:   false,
 		},
 		{
 			name:          "Byte Type ('A')",
 			value:         TestValue{Value: "A"},
-			typ:           mockType{typeString: "byte", underlyingTypeString: "byte"},
+			col:           &Column{Type: mockType{typeString: "byte", underlyingTypeString: "byte"}},
 			expectedValue: "byte('A')",
 			expectedErr:   false,
 		},
 		{
 			name:          "Rune Type ('€') (Aliased Underlying)",
 			value:         TestValue{Value: "€"},
-			typ:           mockType{typeString: "CustomRune", underlyingTypeString: "rune"},
+			col:           &Column{Type: mockType{typeString: "CustomRune", underlyingTypeString: "rune"}},
 			expectedValue: "rune('€')",
 			expectedErr:   false,
 		},
 		{
 			name:          "Byte Slice Type ([]byte)",
 			value:         TestValue{Value: "binary data"},
-			typ:           mockType{typeString: "[]byte", underlyingTypeString: "[]byte"},
+			col:           &Column{Type: mockType{typeString: "[]byte", underlyingTypeString: "[]byte"}},
 			expectedValue: "[]byte(`binary data`)",
 			expectedErr:   false,
 		},
@@ -730,14 +730,14 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "sql.NullString Type",
 			value:         TestValue{Value: "nullable text"},
-			typ:           mockType{typeString: "database/sql.NullString", underlyingTypeString: "database/sql.NullString"},
+			col:           &Column{Type: mockType{typeString: "database/sql.NullString", underlyingTypeString: "database/sql.NullString"}},
 			expectedValue: "sql.NullString{Valid: true, String: \"nullable text\"}",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullByte Type",
 			value:         TestValue{Value: "z"},
-			typ:           mockType{typeString: "database/sql.NullByte", underlyingTypeString: "database/sql.NullByte"},
+			col:           &Column{Type: mockType{typeString: "database/sql.NullByte", underlyingTypeString: "database/sql.NullByte"}},
 			expectedValue: "sql.NullByte{Valid: true, Byte: byte('z')}",
 			expectedErr:   false,
 		},
@@ -746,14 +746,14 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Time.Time Type",
 			value:         TestValue{Value: time.Now()}, // Value doesn't matter, output is hardcoded
-			typ:           mockType{typeString: "time.Time", underlyingTypeString: "time.Time"},
+			col:           &Column{Type: mockType{typeString: "time.Time", underlyingTypeString: "time.Time"}},
 			expectedValue: "time.Now().UTC().Truncate(time.Second)",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullTime Type",
 			value:         TestValue{Value: sql.NullTime{Valid: true, Time: time.Now()}}, // Value doesn't matter, output is hardcoded
-			typ:           mockType{typeString: "database/sql.NullTime", underlyingTypeString: "database/sql.NullTime"},
+			col:           &Column{Type: mockType{typeString: "database/sql.NullTime", underlyingTypeString: "database/sql.NullTime"}},
 			expectedValue: "sql.NullTime{Valid: true, Time: time.Now().UTC().Truncate(time.Second)}",
 			expectedErr:   false,
 		},
@@ -762,21 +762,21 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Basic Bool Type (true)",
 			value:         TestValue{Value: true},
-			typ:           mockType{typeString: "bool", underlyingTypeString: "bool"},
+			col:           &Column{Type: mockType{typeString: "bool", underlyingTypeString: "bool"}},
 			expectedValue: "true",
 			expectedErr:   false,
 		},
 		{
 			name:          "Basic Bool Type (false) (Underlying check)",
 			value:         TestValue{Value: false},
-			typ:           mockType{typeString: "CustomBool", underlyingTypeString: "bool"},
+			col:           &Column{Type: mockType{typeString: "CustomBool", underlyingTypeString: "bool"}},
 			expectedValue: "false",
 			expectedErr:   false,
 		},
 		{
 			name:          "sql.NullBool Type",
 			value:         TestValue{Value: true},
-			typ:           mockType{typeString: "database/sql.NullBool", underlyingTypeString: "database/sql.NullBool"},
+			col:           &Column{Type: mockType{typeString: "database/sql.NullBool", underlyingTypeString: "database/sql.NullBool"}},
 			expectedValue: "sql.NullBool{Valid: true, Bool: true}",
 			expectedErr:   false,
 		},
@@ -785,14 +785,14 @@ func TestTestValueFormat(t *testing.T) {
 		{
 			name:          "Unsupported Type (JSON/RawMessage)",
 			value:         TestValue{Value: `{"key": 1}`},
-			typ:           mockType{typeString: "encoding/json.RawMessage", underlyingTypeString: "[]byte"},
+			col:           &Column{Type: mockType{typeString: "encoding/json.RawMessage", underlyingTypeString: "[]byte"}},
 			expectedValue: fmt.Sprintf("[]byte(`%s`)", `{"key": 1}`),
 			expectedErr:   false,
 		},
 		{
 			name:          "Unsupported Type (Pointers)",
 			value:         TestValue{Value: nil},
-			typ:           mockType{typeString: "*int", underlyingTypeString: "*int"},
+			col:           &Column{Type: mockType{typeString: "*int", underlyingTypeString: "*int"}},
 			expectedValue: "",
 			expectedErr:   true,
 		},
@@ -800,7 +800,7 @@ func TestTestValueFormat(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			formatted, err := tt.value.Format(tt.typ)
+			formatted, err := tt.value.Format(tt.col)
 			if tt.expectedErr {
 				require.Error(t, err)
 			} else {

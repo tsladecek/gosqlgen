@@ -80,7 +80,7 @@ func TestInsertsAndUpdatedValues(t *testing.T) {
 		assert.Len(t, it.data, 1)
 		assert.Equal(t, ChildNameCol, it.data[0].column)
 
-		valueFormatted, err := it.data[0].value.Format(ChildNameCol.Type)
+		valueFormatted, err := it.data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 		expected, err := format.Source(fmt.Appendf(nil, `%s := %s{%s: %s}
 err = %s.insert(ctx, testDb)
@@ -103,7 +103,7 @@ requireNoError(t, err)
 		require.Len(t, it.data, 0) // FK column values are not saved because their value is injected dynamically
 
 		itChild := it.children[0]
-		valueFormatted, err := itChild.data[0].value.Format(ChildNameCol.Type)
+		valueFormatted, err := itChild.data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 
 		require.NoError(t, err)
@@ -132,10 +132,10 @@ requireNoError(t, err)
 		require.Len(t, itu.data, 1)
 		require.Len(t, it.data, 1)
 
-		prev, err := it.data[0].value.Format(ChildNameCol.Type)
+		prev, err := it.data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 
-		curr, err := itu.data[0].value.Format(ChildNameCol.Type)
+		curr, err := itu.data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 
 		assert.NotEqual(t, prev, curr)
@@ -157,15 +157,15 @@ requireNoError(t, err)
 		require.Len(t, it.children[0].data, 1)
 		require.Len(t, itu.children[0].data, 1)
 
-		prev, err := it.children[0].data[0].value.Format(ChildNameCol.Type)
+		prev, err := it.children[0].data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 
-		curr, err := itu.children[0].data[0].value.Format(ChildNameCol.Type)
+		curr, err := itu.children[0].data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 
 		assert.NotEqual(t, prev, curr)
 
-		valueFormatted, err := itu.children[0].data[0].value.Format(ChildNameCol.Type)
+		valueFormatted, err := itu.children[0].data[0].value.Format(ChildNameCol)
 		require.NoError(t, err)
 		expected := fmt.Sprintf(`%s := %s{%s: %s}
 err = %s.insert(ctx, testDb)

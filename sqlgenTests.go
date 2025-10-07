@@ -50,7 +50,7 @@ func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*ins
 				return nil, Errorf("when generating new value for table=%s, column=%s: %w", t.Name, c.Name, err)
 			}
 
-			vf, err := v.Format(c.Type)
+			vf, err := v.Format(c)
 			if err != nil {
 				return nil, Errorf("when formating new value %t for table=%s, column=%s: %w", v, t.Name, c.Name, err)
 			}
@@ -126,7 +126,7 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 				return "", nil, Errorf("when infering new value for table=%s, column=%s for test update method: %w", col.Table.Name, col.Name, err)
 			}
 
-			newValueFormatted, err := newValue.Format(col.Type)
+			newValueFormatted, err := newValue.Format(col)
 			if err != nil {
 				return "", nil, Errorf("when formatting new value for table=%s, column=%s for test update method: %w", col.Table.Name, col.Name, err)
 			}
@@ -165,7 +165,7 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 }
 
 func (ts *testSuite) newData(table *Table) (map[string]any, error) {
-	pk, bk, err := table.PkAndBk()
+	pk, bk, err := table.primaryKeysAndBusinessKeys()
 	if err != nil {
 		return nil, Errorf("could not parse primary and business keys from table: %w", err)
 	}
