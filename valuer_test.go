@@ -29,7 +29,7 @@ func TestNewValuerNumeric(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := NewValuerNumeric(tt.minValue, tt.maxValue, tt.isFloat)
+			v, err := newValuerNumeric(tt.minValue, tt.maxValue, tt.isFloat)
 			require.Equal(t, tt.expectedErr == nil, err == nil)
 
 			if tt.expectedErr == nil {

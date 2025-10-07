@@ -23,7 +23,7 @@ type insertedTable struct {
 
 func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*insertedTable, error) {
 	d := []string{}
-	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, RandomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0), table: t, children: make([]*insertedTable, 0)}
+	it := &insertedTable{varName: fmt.Sprintf("tbl_%s_%s", t.Name, randomString(8, []rune("abcdefghijkl"))), data: make([]insertedValue, 0), table: t, children: make([]*insertedTable, 0)}
 
 	for _, c := range t.Columns {
 		if c.PrimaryKey && c.AutoIncrement {
@@ -50,7 +50,7 @@ func (t *Table) testInsert(w io.Writer, previouslyInserted *insertedTable) (*ins
 				return nil, Errorf("when generating new value for table=%s, column=%s: %w", t.Name, c.Name, err)
 			}
 
-			vf, err := v.Format(c.Type)
+			vf, err := v.Format(c)
 			if err != nil {
 				return nil, Errorf("when formating new value %t for table=%s, column=%s: %w", v, t.Name, c.Name, err)
 			}
@@ -83,7 +83,7 @@ type testSuite struct {
 //go:embed templates
 var templateFS embed.FS
 
-func NewTestSuite() (*testSuite, error) {
+func NewTestSuite() (TestSuite, error) {
 	tmpl, err := template.ParseFS(templateFS, "templates/*.tmpl")
 
 	if err != nil {
@@ -126,7 +126,7 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 				return "", nil, Errorf("when infering new value for table=%s, column=%s for test update method: %w", col.Table.Name, col.Name, err)
 			}
 
-			newValueFormatted, err := newValue.Format(col.Type)
+			newValueFormatted, err := newValue.Format(col)
 			if err != nil {
 				return "", nil, Errorf("when formatting new value for table=%s, column=%s for test update method: %w", col.Table.Name, col.Name, err)
 			}
@@ -165,7 +165,7 @@ func updatedValues(previouslyInserted *insertedTable) (string, *insertedTable, e
 }
 
 func (ts *testSuite) newData(table *Table) (map[string]any, error) {
-	pk, bk, err := table.PkAndBk()
+	pk, bk, err := table.primaryKeysAndBusinessKeys()
 	if err != nil {
 		return nil, Errorf("could not parse primary and business keys from table: %w", err)
 	}
@@ -234,6 +234,7 @@ func (ts *testSuite) ExecuteTemplate(w io.Writer, tmpl string, data any) error {
 	return ts.templates.ExecuteTemplate(w, tmpl, data)
 }
 
+// GenerateTests writes generated test code to the provided io.Writer
 func GenerateTests(ts TestSuite, w io.Writer, table *Table) error {
 	var tempW bytes.Buffer
 

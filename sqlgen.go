@@ -37,7 +37,8 @@ func additionalImports(model *DBModel) ([]string, []string, error) {
 		}
 
 		for _, column := range table.Columns {
-			if IsOneOfTypes(column.Type, []string{"time.Time"}) {
+			_, isTime := column.format.IsTime()
+			if IsOneOfTypes(column.Type, TimeTypesAll) || isTime {
 				testCodeImportsMap["time"] = true
 			}
 		}
@@ -57,6 +58,8 @@ type TestSuite interface {
 	ExecuteTemplate(w io.Writer, tmpl string, data any) error
 }
 
+// CreateTemplates constructs generated code and test code from the given DBModel.
+// The resulting code is formatted
 func CreateTemplates(d Driver, model *DBModel, ts TestSuite, outputPath, outputTestPath string) error {
 	writer := new(bytes.Buffer)
 	testWriter := new(bytes.Buffer)
@@ -92,7 +95,7 @@ func CreateTemplates(d Driver, model *DBModel, ts TestSuite, outputPath, outputT
 		}
 
 		// GET
-		pk, bk, err := table.PkAndBk()
+		pk, bk, err := table.primaryKeysAndBusinessKeys()
 		if err != nil {
 			return Errorf("when fetching primary and business keys for table %s: %w", table.Name, err)
 		}

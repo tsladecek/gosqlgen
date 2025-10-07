@@ -11,7 +11,7 @@ type valuerNumeric struct {
 	isFloat bool
 }
 
-func NewValuerNumeric(minValue, maxValue float64, isFloat bool) (valuerNumeric, error) {
+func newValuerNumeric(minValue, maxValue float64, isFloat bool) (valuerNumeric, error) {
 	if minValue > maxValue {
 		return valuerNumeric{}, Errorf("min value is greater than max value: %w", ErrValuerConstructor)
 	}
@@ -102,7 +102,7 @@ type valuerString struct {
 	valueSet []string
 }
 
-func NewValuerString(length int, kind stringKind, charSet []rune, valueSet []string) (valuerString, error) {
+func newValuerString(length int, kind stringKind, charSet []rune, valueSet []string) (valuerString, error) {
 	valid := kind.IsValid()
 	if !valid {
 		return valuerString{}, Errorf("kind=%s: %w", kind, ErrStringKind)
@@ -145,7 +145,7 @@ func (v valuerString) basic(prev string) (TestValue, error) {
 			return TestValue{}, Errorf("can not infer new basic string value: %w", ErrValuer)
 		}
 
-		out[i] = charSetWithoutChar[RandomInt(len(charSetWithoutChar))]
+		out[i] = charSetWithoutChar[randomInt(len(charSetWithoutChar))]
 	}
 
 	return TestValue{Value: string(out)}, nil
@@ -163,7 +163,7 @@ func (v valuerString) enum(prev string) (TestValue, error) {
 }
 
 func (v valuerString) randomString(length int) string {
-	return RandomString(length, v.charSet)
+	return randomString(length, v.charSet)
 }
 
 func (v valuerString) json() (TestValue, error) {
@@ -179,12 +179,12 @@ func (v valuerString) time(format string) (TestValue, error) {
 }
 
 func (v valuerString) ipv4() (TestValue, error) {
-	return TestValue{fmt.Sprintf("%d.%d.%d.%d", RandomInt(256), RandomInt(256), RandomInt(256), RandomInt(256))}, nil
+	return TestValue{fmt.Sprintf("%d.%d.%d.%d", randomInt(256), randomInt(256), randomInt(256), randomInt(256))}, nil
 }
 
 func (v valuerString) ipv6() (TestValue, error) {
 	part := func() string {
-		return RandomString(4, []rune("0123456789abcdef"))
+		return randomString(4, []rune("0123456789abcdef"))
 
 	}
 
@@ -226,7 +226,7 @@ func (v valuerString) Zero() TestValue {
 
 type valuerTime struct{}
 
-func NewValuerTime() (valuerTime, error) {
+func newValuerTime() (valuerTime, error) {
 	return valuerTime{}, nil
 }
 
@@ -240,7 +240,7 @@ func (v valuerTime) Zero() TestValue {
 
 type valuerBoolean struct{}
 
-func NewValuerBoolean() (valuerBoolean, error) {
+func newValuerBoolean() (valuerBoolean, error) {
 	return valuerBoolean{}, nil
 }
 
