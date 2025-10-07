@@ -1,6 +1,8 @@
-# gosqlgen
+# gosqlgen: Go SQL Method Code Generator
 
-SQL method Go(lang) code generator based on table annotations using field tags.
+A tool that automatically generates basic SQL methods (get, insert, update, and delete) for SQL tables declared as Go structs.
+It uses Go struct comments and field tags to define the corresponding database table and columns, streamlining the creation of boilerplate database code.
+Along with generated test code, this saves time writing boilerplate code/tests.
 
 ## Table and Column definition
 ### Table
@@ -41,9 +43,10 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 - `ipv6` - string will be formatted as ipv6 (xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)
 - `time <format>` - string will be formatted as time in given format. The format should be a string of valid go format (e.g. RFC3339, Kitchen, etc.)
 
-*Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
-The tool will not raise any errors if more are used within the tag. In such case, the last (right
-most) format specifier will be used
+> [!NOTE]
+> *Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
+> The tool will not raise any errors if more are used within the tag. In such case, the last (right
+> most) format specifier will be used
 
 ## Install
 
@@ -122,6 +125,7 @@ func (t *Address) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
 and tests in `generatedMethods_test.go`. For the tests to work properly you have to setup the database and point the `testDb` var to the connection.
 
 ## How to use this package
+
 The goal of the tool is to streamline the generation of basic sql methods
 (get, create, update, delete) for tables, declared as structs.
 If this is not your case, you can stop reading.
