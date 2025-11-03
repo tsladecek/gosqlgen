@@ -4,7 +4,84 @@ A tool that automatically generates basic SQL methods (get, insert, update, and 
 It uses Go struct comments and field tags to define the corresponding database table and columns, streamlining the creation of boilerplate database code.
 Along with generated test code, this saves time writing boilerplate code/tests.
 
+## Example
+
+Given following table spec:
+
+```go
+//go:generate gosqlgen -driver gosqldriver_mysql -out generatedMethods.go -outTest generatedMethods_test.go
+package dbrepo
+
+type Continent string
+
+const (
+	ContinentEurope = "Europe"
+	ContinentAsia = "Asia"
+	ContinentAfrica = "Africa"
+)
+
+
+// gosqlgen: users
+type User struct {
+	RawId int    `gosqlgen:"_id;pk;ai"`
+	Id    string `gosqlgen:"id;bk"`
+	Name  string `gosqlgen:"name;length 64"`
+	BirthContinent Continent `gosqlgen:"birth_continent; enum (Asia, Europe, Africa)"`
+}
+
+// gosqlgen: addresses
+type Address struct {
+	RawId     int32        `gosqlgen:"_id;pk;ai"`
+	Id        string       `gosqlgen:"id;bk"`
+	Address   string       `gosqlgen:"address;bk;length 128"`
+	UserId    int          `gosqlgen:"user_id;fk users._id"`
+	DeletedAt sql.NullTime `gosqlgen:"deleted_at;sd"`
+}
+```
+
+running
+
+```shell
+go generate .
+```
+
+will generate following methods in a file `generatedMethods.go`:
+
+```go
+func (t *User) delete(ctx context.Context, db dbExecutor) error
+func (t *User) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error
+func (t *User) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error
+func (t *User) insert(ctx context.Context, db dbExecutor) error
+func (t *User) updateByBusinessKeys(ctx context.Context, db dbExecutor) error
+func (t *User) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
+
+func (t *Address) delete(ctx context.Context, db dbExecutor) error
+func (t *Address) getByBusinessKeys(ctx context.Context, db dbExecutor, id string, address string) error
+func (t *Address) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int32) error
+func (t *Address) insert(ctx context.Context, db dbExecutor) error
+func (t *Address) updateByBusinessKeys(ctx context.Context, db dbExecutor) error
+func (t *Address) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
+```
+
+and tests in `generatedMethods_test.go`. For the tests to work properly you have to setup the database and point the `testDb` var to the connection.
+
+## Install
+
+### Preferred
+
+Download the binary from the [GitHub Releases](https://github.com/tsladecek/gosqlgen/releases) page and place it on your path
+
+### Alternative
+
+> [!NOTE]
+> The `-version` flag wont work in this case and will only print "dev"
+
+```shell
+go install github.com/tsladecek/gosqlgen/cmd/gosqlgen@latest
+```
+
 ## Table and Column definition
+
 ### Table
 Table definition is expected as a comment of the struct type in following format:
 
@@ -47,82 +124,6 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 > *Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
 > The tool will not raise any errors if more are used within the tag. In such case, the last (right
 > most) format specifier will be used
-
-## Install
-
-### Preferred
-
-Download the binary from the [GitHub Releases](https://github.com/tsladecek/gosqlgen/releases) page and place it on your path
-
-### Alternative
-
-> [!NOTE]
-> The `-version` flag wont work in this case and will only print "dev"
-
-```shell
-go install github.com/tsladecek/gosqlgen/cmd/gosqlgen@latest
-```
-
-## Example
-
-Given following table spec:
-
-```go
-//go:generate gosqlgen -driver gosqldriver_mysql -out generatedMethods.go -outTest generatedMethods_test.go
-package dbrepo
-
-type Continent string
-
-const (
-	ContinentEurope = "Europe"
-	ContinentAsia = "Asia"
-	ContinentAfrica = "Africa"
-)
-
-
-// gosqlgen: users
-type User struct {
-	RawId int    `gosqlgen:"_id;pk ai"`
-	Id    string `gosqlgen:"id;bk"`
-	Name  string `gosqlgen:"name;length 64"`
-	BirthContinent Continent `gosqlgen:"birth_continent; enum (Asia, Europe, Africa)"`
-}
-
-// gosqlgen: addresses
-type Address struct {
-	RawId     int32        `gosqlgen:"_id;pk ai"`
-	Id        string       `gosqlgen:"id;bk"`
-	Address   string       `gosqlgen:"address;bk;length 128"`
-	UserId    int          `gosqlgen:"user_id;fk users._id"`
-	DeletedAt sql.NullTime `gosqlgen:"deleted_at;sd"`
-}
-```
-
-running
-
-```shell
-go generate .
-```
-
-will generate following methods in a file `generatedMethods.go`:
-
-```go
-func (t *User) delete(ctx context.Context, db dbExecutor) error
-func (t *User) getByBusinessKeys(ctx context.Context, db dbExecutor, id string) error
-func (t *User) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int) error
-func (t *User) insert(ctx context.Context, db dbExecutor) error
-func (t *User) updateByBusinessKeys(ctx context.Context, db dbExecutor) error
-func (t *User) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
-
-func (t *Address) delete(ctx context.Context, db dbExecutor) error
-func (t *Address) getByBusinessKeys(ctx context.Context, db dbExecutor, id string, address string) error
-func (t *Address) getByPrimaryKeys(ctx context.Context, db dbExecutor, _id int32) error
-func (t *Address) insert(ctx context.Context, db dbExecutor) error
-func (t *Address) updateByBusinessKeys(ctx context.Context, db dbExecutor) error
-func (t *Address) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
-```
-
-and tests in `generatedMethods_test.go`. For the tests to work properly you have to setup the database and point the `testDb` var to the connection.
 
 ## How to use this package
 
