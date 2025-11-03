@@ -35,8 +35,8 @@ Where FLAGS are **semicolon** separated modifiers. Supported are:
 - `min` - minimum value (relevant for numeric columns)
 - `max` - maximum value (relevant for numeric columns)
 - `length` - maximum length (relevant for string columns)
-- `charSet (a, b, c, d)` - alphabet (relevant for string columns)
-- `enum (val1, val2, val3)` - set of allowed values (relevant for string columns). *Format specifier*
+- `charSet{?sep} (a, b, c, d)` - alphabet (relevant for string columns). If no separator is specified (e.g. "charSet| (a | b | c | d)"), comma is used
+- `enum{?sep} (val1, val2, val3)` - set of allowed values (relevant for string columns). *Format specifier*. If no separator is specified (e.g. "enum: (val1: val2: val3)"), comma is used
 - `json` - string will be formatted as json (relevant for string columns). *Format specifier*
 - `uuid` - string will be formatted as uuid (relevant for string columns). *Format specifier*
 - `ipv4` - string will be formatted as ipv4 (xxx.xxx.xxx.xxx)

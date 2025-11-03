@@ -317,15 +317,11 @@ func tagFields(tag string) []string {
 	return fields
 }
 
-// tagListContent extracts the content inside parentheses and
+// tagListContent extracts the content inside parentheses after the flag and
 // returns it as a slice of strings. It is space agnostic. The function
 // does not check the position of the content inside the tag
-func tagListContent(tag string) ([]string, error) {
+func tagListContent(tag string, separator string) ([]string, error) {
 	fields := tagFields(tag)
-
-	if strings.HasPrefix(fields[0], "(") {
-		return nil, Errorf("tag can not start with parenthesis: %w", ErrFlagFormat)
-	}
 
 	tagContent := strings.Join(fields[1:], "")
 
@@ -334,7 +330,7 @@ func tagListContent(tag string) ([]string, error) {
 	}
 
 	content := []string{}
-	for s := range strings.SplitSeq(strings.TrimPrefix(strings.TrimSuffix(tagContent, ")"), "("), ",") {
+	for s := range strings.SplitSeq(strings.TrimPrefix(strings.TrimSuffix(tagContent, ")"), "("), separator) {
 		if slices.Contains(content, s) {
 			continue
 		}
@@ -343,6 +339,27 @@ func tagListContent(tag string) ([]string, error) {
 	}
 
 	return content, nil
+}
+
+// tagExtractSeparator extracts the list item separator from the tag,
+// if it is defined. The tag string should in that case be in format
+// tag<sep> (...items). If no separator is found, comma is used as default
+func tagExtractSeparator(tagString, tag string) (string, error) {
+	if len(tagString) <= len(tag) {
+		return "", fmt.Errorf("tagString %q must be longer than tag %q", tagString, tag)
+	}
+
+	if tagString[:len(tag)] != tag {
+		return "", fmt.Errorf("incompatible tagString %q with tag %q", tagString, tag)
+	}
+
+	separatorChar := tagString[len(tag)]
+
+	if separatorChar == ' ' {
+		return ",", nil
+	}
+
+	return string(separatorChar), nil
 }
 
 // tagInt extracts integer from the second position in the space delimited tag fields
@@ -467,17 +484,27 @@ func NewColumn(tag string) (*Column, error) {
 			}
 			c.length = n
 		case tagHasPrefix(m, FlagEnum):
-			valueSet, err := tagListContent(m)
+			sep, err := tagExtractSeparator(m, string(FlagEnum))
 			if err != nil {
-				return nil, Errorf("column=%s: %w", c.Name, err)
+				return nil, fmt.Errorf("when extracting separator, column=%s: %w", c.Name, err)
+			}
+
+			valueSet, err := tagListContent(m, sep)
+			if err != nil {
+				return nil, Errorf("when extracting enum content, column=%s: %w", c.Name, err)
 			}
 
 			c.valueSet = valueSet
 			c.format = stringKindEnum
 		case tagHasPrefix(m, FlagCharSet):
-			valueSet, err := tagListContent(m)
+			sep, err := tagExtractSeparator(m, string(FlagCharSet))
 			if err != nil {
-				return nil, Errorf("column=%s: %w", c.Name, err)
+				return nil, fmt.Errorf("when extracting separator, column=%s: %w", c.Name, err)
+			}
+
+			valueSet, err := tagListContent(m, sep)
+			if err != nil {
+				return nil, Errorf("when extracting charset, column=%s: %w", c.Name, err)
 			}
 			r := []rune{}
 

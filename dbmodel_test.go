@@ -317,6 +317,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 		"deleted_at sql.NullTime `gosqlgen:\"deleted_at;sd\"`",
 		"ShouldBeJSON string `gosqlgen:\"should_be_json; uuid; json;\"`", // although there is also uuid flag, format should be json as it is last
 		"ShouldBeUUID string `gosqlgen:\"should_be_uuid; json; uuid\"`",  // although there is also json flag, format should be uuid as it is last
+		"SomeEnum string `gosqlgen:\"some_enum; enum: (val1: val2 : val3)\"`",
 		"}",
 		"// gosqlgen: table2",
 		"type Table2 struct {",
@@ -341,7 +342,7 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 
 	assert.Equal(t, "table1", t1.Name)
 	assert.True(t, t1.HasFlag(TableFlagIgnoreTest))
-	assert.Len(t, t1.Columns, 5)
+	assert.Len(t, t1.Columns, 6)
 
 	columnCompare := func(same bool, typeString string, expected, tested Column) {
 		compFunc := assert.Equal
@@ -394,6 +395,12 @@ func TestNewDBModel_HappyPath(t *testing.T) {
 
 	assert.Equal(t, "table2", t2.Name)
 	assert.Empty(t, t2.Flags)
+
+	// Table: table1, Column: some_enum
+	se, err := t1.GetColumn("some_enum")
+	require.NoError(t, err)
+	require.NotNil(t, sbu)
+	assert.Equal(t, *se, Column{Name: "some_enum", FieldName: "SomeEnum", Table: t1, Type: types.Typ[types.String], valueSet: []string{"val1", "val2", "val3"}, format: stringKindEnum, TestValuer: valuerString{length: defaultStringLength, charSet: defaultCharSet, kind: stringKindEnum, valueSet: []string{"val1", "val2", "val3"}}})
 
 	// Table: table2, Column: id
 	id2, err := t2.GetColumn("id")
@@ -554,19 +561,21 @@ func TestTagListContent(t *testing.T) {
 		tag         string
 		values      []string
 		expectedErr error
+		sep         string
 	}{
-		{name: "valid", tag: "tag (val1,val2)", values: []string{"val1", "val2"}},
-		{name: "invalid bad position", tag: "tag tag (val1,val2) tag tag", expectedErr: ErrFlagFormat},
-		{name: "valid padded", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
-		{name: "valid padded deduplicated", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
-		{name: "valid single char padded deduplicated", tag: "  tag   ( a , a , b )  ", values: []string{"a", "b"}},
-		{name: "invalid missing start paren", tag: "tag a,b)", expectedErr: ErrFlagFormat},
-		{name: "invalid missing end paren", tag: "tag (a,b", expectedErr: ErrFlagFormat},
+		{name: "valid", sep: ",", tag: "tag (val1,val2)", values: []string{"val1", "val2"}},
+		{name: "valid, different separator", sep: "|", tag: "tag (val1,val2)", values: []string{"val1,val2"}},
+		{name: "invalid bad position", sep: ",", tag: "tag tag (val1,val2) tag tag", expectedErr: ErrFlagFormat},
+		{name: "valid padded", sep: ",", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
+		{name: "valid padded deduplicated", sep: ",", tag: "  tag   (  val1 ,  val2)  ", values: []string{"val1", "val2"}},
+		{name: "valid single char padded deduplicated", sep: ",", tag: "  tag   ( a , a , b )  ", values: []string{"a", "b"}},
+		{name: "invalid missing start paren", sep: ",", tag: "tag a,b)", expectedErr: ErrFlagFormat},
+		{name: "invalid missing end paren", sep: ",", tag: "tag (a,b", expectedErr: ErrFlagFormat},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			content, err := tagListContent(tt.tag)
+			content, err := tagListContent(tt.tag, tt.sep)
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr)
 			} else {
@@ -895,4 +904,24 @@ func TestStringKindIsTime(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, f, tf)
 	}
+}
+
+func TestTagExtractSeparator(t *testing.T) {
+	_, err := tagExtractSeparator("tag", "tag")
+	assert.Error(t, err)
+
+	_, err = tagExtractSeparator("tgg", "tag")
+	assert.Error(t, err)
+
+	s, err := tagExtractSeparator("tag (asdas,asdad,asdad)", "tag")
+	assert.NoError(t, err)
+	assert.Equal(t, ",", s)
+
+	s, err = tagExtractSeparator("tag, (asdas,asdad,asdad)", "tag")
+	assert.NoError(t, err)
+	assert.Equal(t, ",", s)
+
+	s, err = tagExtractSeparator("tag; (asdas,asdad,asdad)", "tag")
+	assert.NoError(t, err)
+	assert.Equal(t, ";", s)
 }
