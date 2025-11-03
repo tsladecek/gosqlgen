@@ -4,65 +4,6 @@ A tool that automatically generates basic SQL methods (get, insert, update, and 
 It uses Go struct comments and field tags to define the corresponding database table and columns, streamlining the creation of boilerplate database code.
 Along with generated test code, this saves time writing boilerplate code/tests.
 
-## Table and Column definition
-### Table
-Table definition is expected as a comment of the struct type in following format:
-
-`gosqlgen:table_name: REQUIRED[FLAGS]`
-
-Where FLAGS are **semicolon** separated modifiers. Supported are:
-- `ignore` - methods and tests will not be generated
-- `ignore update` - update method and tests for update method will not be generated
-- `ignore delete` - delete method and tests for delete method woll not be generated
-- `ignore test` - tests will not be generated
-- `ignore test update` - tests for update method will not be generated
-- `ignore test delete` - tests for delete method will not be generated
-
-### Column
-Column definition is expected as a field tag (similar to json tag) in following format:
-
-`gosqlgen:"column_name: REQUIRED[FLAGS]"`
-Where FLAGS are **semicolon** separated modifiers. Supported are:
-
-**Column constraint flags**
-- `pk` - primary key
-- `ai` - auto incremented. Useful only in combination with `pk` for inserts
-- `bk` - business key (<=> UNIQUE constraint)
-- `fk <table>.<column>` - foreign key referencing `column` on `table`
-- `sd` - soft delete column. If present, the generated `delete` method will be soft delete update
-
-**Column value flags** - useful only for generating tests
-- `min` - minimum value (relevant for numeric columns)
-- `max` - maximum value (relevant for numeric columns)
-- `length` - maximum length (relevant for string columns)
-- `charSet (a, b, c, d)` - alphabet (relevant for string columns)
-- `enum (val1, val2, val3)` - set of allowed values (relevant for string columns). *Format specifier*
-- `json` - string will be formatted as json (relevant for string columns). *Format specifier*
-- `uuid` - string will be formatted as uuid (relevant for string columns). *Format specifier*
-- `ipv4` - string will be formatted as ipv4 (xxx.xxx.xxx.xxx)
-- `ipv6` - string will be formatted as ipv6 (xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)
-- `time <format>` - string will be formatted as time in given format. The format should be a string of valid go format (e.g. RFC3339, Kitchen, etc.)
-
-> [!NOTE]
-> *Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
-> The tool will not raise any errors if more are used within the tag. In such case, the last (right
-> most) format specifier will be used
-
-## Install
-
-### Preferred
-
-Download the binary from the [GitHub Releases](https://github.com/tsladecek/gosqlgen/releases) page and place it on your path
-
-### Alternative
-
-> [!NOTE]
-> The `-version` flag wont work in this case and will only print "dev"
-
-```shell
-go install github.com/tsladecek/gosqlgen/cmd/gosqlgen@latest
-```
-
 ## Example
 
 Given following table spec:
@@ -82,7 +23,7 @@ const (
 
 // gosqlgen: users
 type User struct {
-	RawId int    `gosqlgen:"_id;pk ai"`
+	RawId int    `gosqlgen:"_id;pk;ai"`
 	Id    string `gosqlgen:"id;bk"`
 	Name  string `gosqlgen:"name;length 64"`
 	BirthContinent Continent `gosqlgen:"birth_continent; enum (Asia, Europe, Africa)"`
@@ -90,7 +31,7 @@ type User struct {
 
 // gosqlgen: addresses
 type Address struct {
-	RawId     int32        `gosqlgen:"_id;pk ai"`
+	RawId     int32        `gosqlgen:"_id;pk;ai"`
 	Id        string       `gosqlgen:"id;bk"`
 	Address   string       `gosqlgen:"address;bk;length 128"`
 	UserId    int          `gosqlgen:"user_id;fk users._id"`
@@ -123,6 +64,66 @@ func (t *Address) updateByPrimaryKeys(ctx context.Context, db dbExecutor) error
 ```
 
 and tests in `generatedMethods_test.go`. For the tests to work properly you have to setup the database and point the `testDb` var to the connection.
+
+## Install
+
+### Preferred
+
+Download the binary from the [GitHub Releases](https://github.com/tsladecek/gosqlgen/releases) page and place it on your path
+
+### Alternative
+
+> [!NOTE]
+> The `-version` flag wont work in this case and will only print "dev"
+
+```shell
+go install github.com/tsladecek/gosqlgen/cmd/gosqlgen@latest
+```
+
+## Table and Column definition
+
+### Table
+Table definition is expected as a comment of the struct type in following format:
+
+`gosqlgen:table_name: REQUIRED[FLAGS]`
+
+Where FLAGS are **semicolon** separated modifiers. Supported are:
+- `ignore` - methods and tests will not be generated
+- `ignore update` - update method and tests for update method will not be generated
+- `ignore delete` - delete method and tests for delete method woll not be generated
+- `ignore test` - tests will not be generated
+- `ignore test update` - tests for update method will not be generated
+- `ignore test delete` - tests for delete method will not be generated
+
+### Column
+Column definition is expected as a field tag (similar to json tag) in following format:
+
+`gosqlgen:"column_name: REQUIRED[FLAGS]"`
+Where FLAGS are **semicolon** separated modifiers. Supported are:
+
+**Column constraint flags**
+- `pk` - primary key
+- `ai` - auto incremented. Useful only in combination with `pk` for inserts
+- `bk` - business key (<=> UNIQUE constraint)
+- `fk <table>.<column>` - foreign key referencing `column` on `table`
+- `sd` - soft delete column. If present, the generated `delete` method will be soft delete update
+
+**Column value flags** - useful only for generating tests
+- `min` - minimum value (relevant for numeric columns)
+- `max` - maximum value (relevant for numeric columns)
+- `length` - maximum length (relevant for string columns)
+- `charSet{?sep} (a, b, c, d)` - alphabet (relevant for string columns). If no separator is specified (e.g. "charSet| (a | b | c | d)"), comma is used
+- `enum{?sep} (val1, val2, val3)` - set of allowed values (relevant for string columns). *Format specifier*. If no separator is specified (e.g. "enum: (val1: val2: val3)"), comma is used
+- `json` - string will be formatted as json (relevant for string columns). *Format specifier*
+- `uuid` - string will be formatted as uuid (relevant for string columns). *Format specifier*
+- `ipv4` - string will be formatted as ipv4 (xxx.xxx.xxx.xxx)
+- `ipv6` - string will be formatted as ipv6 (xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)
+- `time <format>` - string will be formatted as time in given format. The format should be a string of valid go format (e.g. RFC3339, Kitchen, etc.)
+
+> [!NOTE]
+> *Format specifiers* dictate some specific format of the output strings. Only one must be supplied.
+> The tool will not raise any errors if more are used within the tag. In such case, the last (right
+> most) format specifier will be used
 
 ## How to use this package
 
